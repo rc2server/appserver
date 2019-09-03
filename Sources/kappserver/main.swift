@@ -1,10 +1,14 @@
 import Foundation
 import Kitura
+import HeliumLogger
+import Logging
 
 public class App {
 	let router = Router()
+	let logger = HeliumLogger()
 	
 	public init() throws {
+		LoggingSystem.bootstrap(logger.makeLogHandler)
 	}
 	
 	public func postInit() throws {
