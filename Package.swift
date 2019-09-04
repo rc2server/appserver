@@ -27,6 +27,9 @@ let package = Package(
         	dependencies: ["Rc2Model", "pgswift", "Logging"]),
         .testTarget(
             name: "kappserverTests",
-            dependencies: ["kappserver"]),
+            dependencies: ["kappserver", "servermodelTests"]),
+		.testTarget(
+			name: "servermodelTests",
+			dependencies: ["servermodel"]),
     ]
 )
