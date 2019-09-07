@@ -1,0 +1,3 @@
+[submodule "rc2root"]
+	path = rc2root
+	url = https://github.com/rc2server/rc2.git
