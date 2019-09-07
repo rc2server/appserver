@@ -198,6 +198,12 @@ final class Rc2DAOTests: XCTestCase {
 		XCTAssertEqual(renamedFile.name, newName)
 		XCTAssertEqual(renamedFile.id, file.id)
 		XCTAssertGreaterThan(renamedFile.version, file.version)
+		
+		// still need to test getFileData, insertFile, setFile(data:) delete(fileId:), duplicate
+	}
+	
+	func testImages() throws {
+		// test dao.getImages)
 	}
 	
 	// MARK: - helper methods
@@ -264,5 +270,6 @@ final class Rc2DAOTests: XCTestCase {
 		("testWorkspaceMethods", testWorkspaceMethods),
 		("testSessionRecord", testSessionRecord),
 		("testFiles", testFiles),
+		("testImages", testImages),
 	]
 }
