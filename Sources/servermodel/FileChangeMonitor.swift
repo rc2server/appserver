@@ -73,7 +73,7 @@ class FileChangeMonitor {
 			else { logger.warning("invalid change notifiction from db \(msg)"); return }
 		do {
 			var file: Rc2Model.File?
-			let results = try dbConnection.execute(query: "select * from rcfile where id = \(fileId)", values: [])
+			let results = try dbConnection.execute(query: "select * from rcfile where id = \(fileId)", parameters: [])
 			guard results.wasSuccessful else {
 				logger.warning("file watch selection failed: \(results.errorMessage)")
 				return

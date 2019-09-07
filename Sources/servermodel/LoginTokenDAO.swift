@@ -46,7 +46,7 @@ public final class LoginTokenDAO {
 	/// - Throws: a .dbError if the sql command fails
 	public func createToken(user: User) throws -> LoginToken {
 		do {
-			let result = try pgdb.execute(query: "insert into logintoken (userId) values ($1) returning id", values: [QueryParameter(type: .int8, value: user.id, connection: pgdb)])
+			let result = try pgdb.execute(query: "insert into logintoken (userId) values ($1) returning id", parameters: [QueryParameter(type: .int8, value: user.id, connection: pgdb)])
 			guard result.wasSuccessful, result.rowCount == 1 else { throw ModelError.dbError }
 			guard let tokenId: Int = try result.getValue(row: 0, column: 0)
 				else { throw ModelError.dbError }
@@ -64,7 +64,7 @@ public final class LoginTokenDAO {
 	public func validate(token: LoginToken) -> Bool {
 		do {
 			let params: [QueryParameter] = [ try QueryParameter(type: .int8, value: token.id, connection: pgdb), try QueryParameter(type: .int8, value: token.userId, connection: pgdb) ]
-			let result = try? pgdb.execute(query: "select * from logintoken where id = $1 and userId = $2 and valid = true", values: params)
+			let result = try? pgdb.execute(query: "select * from logintoken where id = $1 and userId = $2 and valid = true", parameters: params)
 			guard let res = result, res.wasSuccessful, res.rowCount == 1
 				else { return false }
 			return true
@@ -81,7 +81,7 @@ public final class LoginTokenDAO {
 	public func invalidate(token: LoginToken) throws {
 		let query = "update logintoken set valid = false where id = $1 and userId = $2"
 		let params: [QueryParameter] = [ try QueryParameter(type: .int8, value: token.id, connection: pgdb), try QueryParameter(type: .int8, value: token.userId, connection: pgdb) ]
-		let results = try pgdb.execute(query: query, values: params)
+		let results = try pgdb.execute(query: query, parameters: params)
 		guard results.wasSuccessful else {
 			logger.warning("failed to invalidate token: \(results.errorMessage)")
 			throw ModelError.dbError

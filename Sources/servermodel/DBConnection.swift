@@ -19,7 +19,7 @@ public protocol DBNotification {
 extension PGNotification: DBNotification {}
 
 public protocol DBConnection {
-	func execute(query: String, values: [QueryParameter]) throws -> PGResult
+	func execute(query: String, parameters: [QueryParameter?]) throws -> PGResult
 //	func execute(_ query: String, _ binds: [Bind]) throws -> Node
 	func close() throws
 	func makeListenDispatchSource(toChannel channel: String, queue: DispatchQueue, callback: @escaping (_ note: DBNotification?, _ err: Error?) -> Void) throws -> DispatchSourceRead
@@ -35,7 +35,7 @@ public class MockDBConnection: DBConnection {
 	public enum MockDBError: String, Error {
 		case unimplemented
 	}
-	public func execute(query: String, values: [QueryParameter]) throws -> PGResult
+	public func execute(query: String, parameters: [QueryParameter?]) throws -> PGResult
 	{
 		throw MockDBError.unimplemented
 	}
@@ -51,10 +51,7 @@ public class MockDBConnection: DBConnection {
 }
 
 extension Connection: DBConnection {
-	public func execute(query: String, values: [QueryParameter] = []) throws -> PGResult {
-		return try execute(query: query, values: values)
-	}
-	
+
 	public func makeListenDispatchSource(toChannel channel: String, queue: DispatchQueue, callback: @escaping (_ note: DBNotification?, _ err: Error?) -> Void) throws -> DispatchSourceRead
 	{
 		let castCallback = callback as (DBNotification?, Error?) -> Void

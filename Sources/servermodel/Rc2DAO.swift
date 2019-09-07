@@ -82,7 +82,7 @@ open class Rc2DAO {
 	/// - Returns: user with specified id
 	/// - Throws: .duplicate if more than one row in database matched, Node errors if problem parsing results
 	public func getUser(id: Int) throws -> User? {
-		let results = try pgdb.execute(query: "select * from rcuser where id = $1", values: [QueryParameter(type: .int8, value: id, connection: pgdb)])
+		let results = try pgdb.execute(query: "select * from rcuser where id = $1", parameters: [QueryParameter(type: .int8, value: id, connection: pgdb)])
 		return try user(from: results)
 	}
 	
@@ -276,7 +276,7 @@ open class Rc2DAO {
 	/// - Parameter workspaceId: the id of the workspace to delete
 	/// - Throws: any database errors
 	public func delete(workspaceId: Int) throws {
-		let results = try pgdb.execute(query: "delete from rcworkspace where id = $1", values: [try QueryParameter(type: .int8, value: workspaceId, connection: pgdb)])
+		let results = try pgdb.execute(query: "delete from rcworkspace where id = $1", parameters: [try QueryParameter(type: .int8, value: workspaceId, connection: pgdb)])
 		guard results.wasSuccessful, results.rowsAffected == 1 else {
 			logger.warning("failed to delete workspace: \(results.errorMessage)")
 			throw DBError.queryFailed
