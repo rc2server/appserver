@@ -68,7 +68,10 @@ open class Rc2DAO {
 			throw ModelError.dbError
 		}
 		for row in 0..<fresult.rowCount {
-			let aFile = try file(from: result, row: row)
+			let aFile = try file(from: fresult, row: row)
+			guard fileDict[aFile.wspaceId] != nil else {
+				throw ModelError.dbError
+			}
 			fileDict[aFile.wspaceId]!.append(aFile)
 		}
 		return BulkUserInfo(user: user, projects: projects, workspaces: wspaceDict, files: fileDict)
@@ -95,9 +98,12 @@ open class Rc2DAO {
 	/// - Returns: user with specified login
 	/// - Throws: .duplicate if more than one row in database matched, Node errors if problem parsing results
 	public func getUser(login: String) throws -> User? {
-		let rawResults: PGResult? = try pgdb.execute(query: "select * from user where login = $1", parameters: [QueryParameter(type: .varchar, value: login, connection: pgdb)])
-		guard let results = rawResults
-			else { throw DBError.queryFailed }
+		let rawResults: PGResult? = try pgdb.execute(query: "select * from rcuser where login = $1", parameters: [QueryParameter(type: .varchar, value: login, connection: pgdb)])
+		guard let results = rawResults, results.wasSuccessful
+			else {
+				logger.warning("getUser(login:) failed: \(rawResults?.errorMessage ?? "nil")")
+				throw DBError.queryFailed
+		}
 		return try user(from: results)
 	}
 	
@@ -109,7 +115,7 @@ open class Rc2DAO {
 	/// - Returns: user if the login/password are valid, nil if user not found
 	/// - Throws: node errors 
 	public func getUser(login: String, password: String) throws -> User? {
-		var query = "select * from user where login = $1"
+		var query = "select * from rcuser where login = $1"
 		var params: [QueryParameter?] = []
 		params.append(try QueryParameter(type: .varchar, value: login, connection: pgdb))
 		if password.count == 0 {
