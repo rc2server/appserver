@@ -121,15 +121,37 @@ open class Rc2DAO {
 		if password.count == 0 {
 			query += " and passworddata IS NULL"
 		} else {
-			query += " and passwordata = crypt($2, passworddata)"
+			query += " and passworddata = crypt($2, passworddata)"
 			params.append(try QueryParameter(type: .varchar, value: password, connection: pgdb))
 		}
-		let rawResults: PGResult? = try pgdb.execute(query: query, parameters: [QueryParameter(type: .varchar, value: login, connection: pgdb)])
+		let rawResults: PGResult? = try pgdb.execute(query: query, parameters: params)
 		guard let results = rawResults, results.rowCount == 1 else {
 			logger.info("failed to find user for login '\(login)'")
 			return nil
 		}
 		return try user(from: results)
+	}
+	
+	/// Change the user's password
+	///
+	/// - Parameters:
+	///   - userId: user's id
+	///   - newPassword: the new password. nil for no password.
+	/// - Throws: queryFailed on any type of error
+	public func changePassword(userId: Int, newPassword: String?) throws {
+		var params: [QueryParameter?] = [
+			try QueryParameter(type: .int8, value: userId, connection: pgdb)]
+		let query = "select rc2setpassword($1::integer, $2::varchar)"
+		if let pass = newPassword {
+			params.append(try QueryParameter(type: .varchar, value: pass, connection: pgdb))
+		} else {
+			params.append(nil)
+		}
+		let result = try pgdb.execute(query: query, parameters: params)
+		guard result.wasSuccessful else {
+			logger.warning("changePassword failed: \(result.errorMessage)")
+			throw DBError.queryFailed
+		}
 	}
 	
 	public func createSessionRecord(wspaceId: Int) throws -> Int {
@@ -197,9 +219,14 @@ open class Rc2DAO {
 	/// - Throws: .duplicate if more than one row in database matched, Node errors if problem parsing results
 	public func getWorkspace(id: Int) throws -> Workspace? {
 		let rawResults: PGResult? = try pgdb.execute(query: "select * from rcworkspace where id = $1", parameters: [QueryParameter(type: .int8, value: id, connection: pgdb)])
-		guard let results = rawResults
-			else { throw DBError.queryFailed }
-		return try workspace(from: results)
+		do {
+			guard let results = rawResults
+				else { throw DBError.queryFailed }
+			return try workspace(from: results)
+		} catch ModelError.notFound {
+			// what we're looking for
+		}
+		return nil
 	}
 	
 	/// gets workspaces belonging to a project
@@ -209,7 +236,7 @@ open class Rc2DAO {
 	/// - Returns: array of workspaces
 	/// - Throws: .duplicate if more than one row in database matched, Node errors if problem parsing results
 	public func getWorkspaces(project: Project) throws -> [Workspace] {
-		let query = "select * from rcproject where projectid = $1"
+		let query = "select * from rcworkspace where projectid = $1"
 		let params = [try QueryParameter(type: .int8, value: project.id, connection: pgdb)]
 		let results = try pgdb.execute(query: query, parameters: params)
 		guard results.wasSuccessful else {

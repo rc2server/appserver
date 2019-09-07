@@ -12,21 +12,21 @@ final class kappserverTests: XCTestCase {
             return
         }
 
-        let fooBinary = productsDirectory.appendingPathComponent("kappserver")
-
-        let process = Process()
-        process.executableURL = fooBinary
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-
-        try process.run()
-        process.waitUntilExit()
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output = String(data: data, encoding: .utf8)
-
-        XCTAssertEqual(output, "Hello, world!\n")
+//        let fooBinary = productsDirectory.appendingPathComponent("kappserver")
+//
+//        let process = Process()
+//        process.executableURL = fooBinary
+//
+//        let pipe = Pipe()
+//        process.standardOutput = pipe
+//
+//        try process.run()
+//        process.waitUntilExit()
+//
+//        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+//        let output = String(data: data, encoding: .utf8)
+//
+//        XCTAssertEqual(output, "Hello, world!\n")
     }
 
     /// Returns path to the built products directory.

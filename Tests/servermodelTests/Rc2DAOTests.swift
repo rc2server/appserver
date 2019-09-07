@@ -97,16 +97,9 @@ final class Rc2DAOTests: XCTestCase {
 	// MARK: - actual tests
 	
 	func testUserMethods() throws {
-		// get user id
-		let rUserId: Int? = try connection.getSingleRowValue(query: "select id from rcuser limit 1")
-		guard let userId = rUserId else {
-			XCTFail("null userid"); return
-		}
-		// get user
-		guard let user = try dao.getUser(id: userId)
-			else { XCTFail("failed to get user \(userId)"); return }
-		// get bulk info
-		let info = try dao.getUserInfo(user: user)
+		// get user info
+		let info = try helperGetUserInfo()
+		// teest the bulk info
 		XCTAssertEqual(info.projects.count, 2)
 		let project = info.projects[0]
 		XCTAssertEqual(info.workspaces.count, 2)
@@ -117,17 +110,81 @@ final class Rc2DAOTests: XCTestCase {
 		XCTAssertEqual(files.count, 3)
 		
 		//get same user by login
-		let user2 = try dao.getUser(login: user.login)
-		XCTAssertEqual(user, user2)
+		let user2 = try dao.getUser(login: info.user.login)
+		XCTAssertEqual(info.user, user2)
+		
+		// test via password. need set one. get second user
+		let puserId: Int = try connection.getSingleRowValue(query: "select id from rcuser offset 1 limit 1")!
+		let puser: User = try dao.getUser(id: puserId)!
+		// set the password
+		let newPassword = "foobar"
+		try dao.changePassword(userId: puser.id, newPassword: newPassword)
+		// verify that is now the password
+		let puser2 = try dao.getUser(login: puser.login, password: newPassword)
+		XCTAssertNotNil(puser2)
+		XCTAssertEqual(puser.id, puser2!.id)
+		XCTAssertEqual(puser.login, puser2!.login)
 	}
 	
+	func testWorkspaceMethods() throws {
+		// also test workspace functionality since we already have that data to compare to
+		let info = try helperGetUserInfo()
+		let project = info.projects[0]
+		let wspaces = info.workspaces[project.id]!
+		let wspace = wspaces[0]
+		
+		// verify getProject
+		let fetchedProj = try dao.getProject(id: project.id)
+		XCTAssertEqual(fetchedProj, project)
+		let fetchedProjs = try dao.getProjects(ownedBy: info.user)
+		XCTAssertEqual(Set(info.projects), Set(fetchedProjs))
+		
+		// verify getWorkspace works
+		let fetchedWspace = try! dao.getWorkspace(id: wspace.id)
+		XCTAssertNotNil(fetchedWspace)
+		XCTAssertEqual(fetchedWspace, wspace)
+		// getWorkspaces
+		let fetchedSpaces = try dao.getWorkspaces(project: project)
+		XCTAssertEqual(wspaces.count, fetchedSpaces.count)
+		let doubleFetched = fetchedSpaces.first { $0.id == fetchedWspace!.id }
+		XCTAssertEqual(fetchedWspace, doubleFetched)
+		// verify no existing workspace
+		let wsName = "json"
+		XCTAssertNil(wspaces.first { $0.name == wsName })
+		let newWspace = try dao.createWorkspace(project: project, name: wsName, insertingFiles: [sqlFileURL, testDataURL])
+		XCTAssertEqual(newWspace.name, wsName)
+		XCTAssertEqual(newWspace.projectId, project.id)
+		// delete workspace. throws exception if it fails
+		try dao.delete(workspaceId: newWspace.id)
+		XCTAssertNil(try dao.getWorkspace(id: newWspace.id))
+	}
 	
+	func testSessionRecord() throws {
+		// pick a workspace
+		let anId: Int? = try connection.getSingleRowValue(query: "select id from rcworkspace limit 1")
+		guard let wspaceId = anId else { fatalError("failed to get a wspaceId") }
+		// create session record
+		let sid = try dao.createSessionRecord(wspaceId: wspaceId)
+		guard let scount: Int = try connection.getSingleRowValue(query: "select count(*) from sessionrecord where id = \(sid) and enddate is null"), scount == 1
+		else {
+			fatalError("failed to verify sessionrecord was created")
+		}
+		// close it
+		try dao.closeSessionRecord(sessionId: sid)
+		let ccount: Int? = try connection.getSingleRowValue(query: "select count(*) from sessionrecord where id = \(sid) and enddate is not null")
+		guard let count = ccount else { fatalError("failed to cast") }
+		XCTAssertEqual(count, 1)
+	}
+	
+	func testFiles() throws {
+		
+	}
 	
 	// MARK: - helper methods
 	
 	func reloadSQL() throws {
 		var args = ["exec", "appserver_test", "psql", "-U", "rc2", "rc2", "--file", "/tmp/rc2.sql"]
-		let dropR = try connection.execute(query: "drop owned by current_user", parameters: [])
+		_ = try connection.execute(query: "drop owned by current_user", parameters: [])
 		_ = try runDocker(arguments: args)
 		// generate test data
 		args[args.count - 1] = "/tmp/testData.pgsql"
@@ -172,7 +229,20 @@ final class Rc2DAOTests: XCTestCase {
 		}
 	}
 	
+	func helperGetUserInfo() throws -> BulkUserInfo {
+		let rUserId: Int? = try connection.getSingleRowValue(query: "select id from rcuser limit 1")
+		guard let userId = rUserId else {
+			XCTFail("null userid"); fatalError()
+		}
+		// get user
+		guard let user = try dao.getUser(id: userId)
+			else { XCTFail("failed to get user \(userId)"); fatalError() }
+		return try dao.getUserInfo(user: user)
+	}
 	static var allTests = [
 		("testUserMethods", testUserMethods),
+		("testWorkspaceMethods", testWorkspaceMethods),
+		("testSessionRecord", testSessionRecord),
+		("testFiles", testFiles),
 	]
 }
