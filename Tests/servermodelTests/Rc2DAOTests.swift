@@ -177,7 +177,27 @@ final class Rc2DAOTests: XCTestCase {
 	}
 	
 	func testFiles() throws {
+		let info = try helperGetUserInfo()
+		let project = info.projects[0]
+		let wspace = info.workspaces[project.id]![0]
+		let files = info.files[wspace.id]!
+		let file = files[0]
 		
+		// getFile
+		let fetchedFile = try dao.getFile(id: file.id, userId: info.user.id)!
+		XCTAssertEqual(fetchedFile, file)
+		// getFiles
+		let fetchedFiles = try dao.getFiles(workspace: wspace)
+		XCTAssertEqual(Set(fetchedFiles), Set(files))
+		// getFileData
+		let dataLength: Int = try connection.getSingleRowValue(query: "select length(bindata) from rcfiledata where id = \(file.id)")!
+		XCTAssertEqual(dataLength, file.fileSize)
+		// rename
+		let newName = "foobaz.R"
+		let renamedFile = try dao.rename(fileId: file.id, version: file.version, newName: newName)
+		XCTAssertEqual(renamedFile.name, newName)
+		XCTAssertEqual(renamedFile.id, file.id)
+		XCTAssertGreaterThan(renamedFile.version, file.version)
 	}
 	
 	// MARK: - helper methods

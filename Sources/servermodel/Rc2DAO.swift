@@ -366,7 +366,7 @@ open class Rc2DAO {
 	/// - Throws: .duplicate if more than one row in database matched, Node errors if problem parsing results
 	public func getFiles(workspace: Workspace) throws -> [File] {
 		let params = [try QueryParameter(type: .int8, value: workspace.id, connection: pgdb)]
-		let results = try pgdb.execute(query: "select f.* from rcfile where f.wspaceId = $1", parameters: params)
+		let results = try pgdb.execute(query: "select f.* from rcfile f where f.wspaceId = $1", parameters: params)
 		guard results.wasSuccessful else {
 			logger.warning("query for files failed: \(results.errorMessage)")
 			throw DBError.queryFailed
