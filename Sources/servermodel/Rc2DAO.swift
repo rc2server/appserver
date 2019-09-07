@@ -546,7 +546,7 @@ open class Rc2DAO {
 					version: try Rc2DAO.value(columnName: "version", results: results),
 					login: try Rc2DAO.value(columnName: "login", results: results),
 					email: try Rc2DAO.value(columnName: "email", results: results),
-					passwordHash: try Rc2DAO.value(columnName: "passwordData", results: results),
+					passwordHash: try Rc2DAO.nullableValue(columnName: "passwordData", results: results),
 					firstName: try Rc2DAO.value(columnName: "firstname", results: results),
 					lastName: try Rc2DAO.value(columnName: "lastname", results: results),
 					isAdmin: try Rc2DAO.value(columnName: "admin", results: results),
@@ -567,7 +567,8 @@ open class Rc2DAO {
 	
 	@inline(__always)
 	private func file(from results: PGResult, row: Int = 0) throws -> File {
-		return File(id: try Rc2DAO.value(columnName: "id", results: results, row: row),
+		return File(
+					id: try Rc2DAO.value(columnName: "id", results: results, row: row),
 					wspaceId: try Rc2DAO.value(columnName: "wspaceId", results: results, row: row),
 					name: try Rc2DAO.value(columnName: "name", results: results, row: row),
 					version: try Rc2DAO.value(columnName: "version", results: results, row: row),
