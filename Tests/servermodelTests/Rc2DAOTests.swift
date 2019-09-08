@@ -198,12 +198,57 @@ final class Rc2DAOTests: XCTestCase {
 		XCTAssertEqual(renamedFile.name, newName)
 		XCTAssertEqual(renamedFile.id, file.id)
 		XCTAssertGreaterThan(renamedFile.version, file.version)
-		
-		// still need to test getFileData, insertFile, setFile(data:) delete(fileId:), duplicate
+		// insert, update, getFileData, setFile(data:)
+		let rawData = try Data(contentsOf: testDataURL)
+		let insFile = try dao.insertFile(name: "foobar.R", wspaceId: wspace.id, bytes: rawData)
+		XCTAssertEqual(insFile.name, "foobar.R")
+		let fetchedData  = try dao.getFileData(fileId: insFile.id)
+		XCTAssertEqual(fetchedData, rawData)
+		let rawData2 = try Data(contentsOf: sqlFileURL)
+		// set file data
+		let updatedFile = try dao.setFile(data: rawData2, fileId: insFile.id, fileVersion: insFile.version)
+		XCTAssertGreaterThan(updatedFile.version, insFile.version)
+		XCTAssertEqual(updatedFile.name, insFile.name)
+		XCTAssertEqual(updatedFile.fileSize, rawData2.count)
+		// set file data wrong version
+		XCTAssertThrowsError(try dao.setFile(data: rawData, fileId: updatedFile.id, fileVersion: 21))
+		//delete
+		try dao.delete(fileId: insFile.id) //throws on error)
+		XCTAssertThrowsError(try dao.getFileData(fileId: insFile.id))
+		let dupFile = try dao.duplicate(fileId: file.id, withName: "dupFile.R")
+		let dupFile2 = try dao.getFile(id: dupFile.id, userId: info.user.id)!
+		XCTAssertEqual(dupFile2.fileSize, dupFile.fileSize)
+		XCTAssertEqual(dupFile2.name, "dupFile.R")
 	}
 	
 	func testImages() throws {
-		// test dao.getImages)
+		let info = try helperGetUserInfo()
+		// requires a session exist
+		let sessionId = try dao.createSessionRecord(wspaceId: info.user.id)
+		// pretned testData is an image
+		let imgData = try Data(contentsOf: testDataURL)
+		let batchId = 11
+		let query = "insert into sessionimage (sessionid, batchid, name, imgData) values ($1, $2, $3, $4) returning id"
+		let params = [
+			try QueryParameter(type: .int8, value: sessionId, connection: connection),
+			try QueryParameter(type: .int8, value: batchId, connection: connection),
+			try QueryParameter(type: .varchar, value: "imagefile.png", connection: connection),
+			try QueryParameter(type: .bytea, value: imgData, connection: connection)
+		]
+		var imageIds = [Int]()
+		for _ in 0..<3 {
+			let results = try connection.execute(query: query, parameters: params)
+			XCTAssert(results.wasSuccessful)
+			XCTAssertEqual(results.rowsAffected, 1)
+			XCTAssertEqual(results.rowCount, 1)
+			XCTAssertEqual(results.columnCount, 1)
+			let imageId: Int = try results.getValue(row: 0, column: 0)!
+			imageIds.append(imageId)
+		}
+		//now get the images
+		let images = try dao.getImages(imageIds: imageIds)
+		XCTAssertEqual(images.count, 3)
+		XCTAssertEqual(images[0].batchId, batchId)
 	}
 	
 	// MARK: - helper methods

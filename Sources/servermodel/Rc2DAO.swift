@@ -449,14 +449,17 @@ open class Rc2DAO {
 			}
 		}
 		let updatedFile = try pgdb.withTransaction { (pgdb) -> File in
-			let fparams = [try QueryParameter(type: .int8, value: data.count, connection: pgdb)]
-			let fresult = try pgdb.execute(query: "update rcfile set = version = version + 1, lastmodified = now(), filesize = $1 where id = $1 returning *", parameters: fparams)
+			let fparams = [
+				try QueryParameter(type: .int8, value: data.count, connection: pgdb),
+				try QueryParameter(type: .int8, value: fileId, connection: pgdb)]
+			let fresult = try pgdb.execute(query: "update rcfile set lastmodified = now(), filesize = $1 where id = $2 returning *", parameters: fparams)
 			guard fresult.wasSuccessful, fresult.rowsAffected == 1, fresult.rowCount == 1 else {
 				logger.warning("failed to update file: \(fresult.errorMessage)")
 				throw ModelError.dbError
 			}
 			let updatedFile = try file(from: fresult)
-			let dparams = [try QueryParameter(type: .bytea, value: data, connection: pgdb)]
+			let dparams = [try QueryParameter(type: .bytea, value: data, connection: pgdb),
+						   try QueryParameter(type: .int8, value: fileId, connection: pgdb)]
 			let dresult = try pgdb.execute(query: "update rcfiledata set bindata = $1 where id = $2", parameters: dparams)
 			guard dresult.wasSuccessful, dresult.rowsAffected == 1 else {
 				logger.warning("failed to update file data: \(dresult.errorMessage)")
@@ -518,7 +521,7 @@ open class Rc2DAO {
 				throw ModelError.dbError
 			}
 			let theFile = try file(from: result)
-			let dparams = [try QueryParameter(type: .int8, value: fileId, connection: pgdb),
+			let dparams = [try QueryParameter(type: .int8, value: theFile.id, connection: pgdb),
 						 try QueryParameter(type: .int8, value: fileId, connection: pgdb)]
 			let dresult = try pgdb.execute(query: "insert into rcfiledata (id, bindata) values ($1, (select bindata from rcfiledata where id = $2))", parameters: dparams)
 			guard dresult.wasSuccessful, dresult.rowsAffected == 1 else {
@@ -535,7 +538,7 @@ open class Rc2DAO {
 	///
 	/// - Parameter imageIds: Array of image ids
 	/// - Returns: array of images
-	/// - Throws: Node errors if problem fetching from database
+	/// - Throws: db errors if problem fetching from database
 	public func getImages(imageIds: [Int]?) throws -> [SessionImage] {
 		guard let imageIds = imageIds, imageIds.count > 0 else { return [] }
 		let idstring = imageIds.compactMap { String($0) }.joined(separator: ",")
