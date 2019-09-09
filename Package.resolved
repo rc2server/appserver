@@ -29,6 +29,15 @@
         }
       },
       {
+        "package": "CommandLine",
+        "repositoryURL": "https://github.com/rc2server/CommandLine.git",
+        "state": {
+          "branch": null,
+          "revision": "8ef6f7ea139480798c4ce1d47302f4a625061a87",
+          "version": "3.0.0"
+        }
+      },
+      {
         "package": "HeliumLogger",
         "repositoryURL": "https://github.com/IBM-Swift/HeliumLogger.git",
         "state": {
