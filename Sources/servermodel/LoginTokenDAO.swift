@@ -8,9 +8,10 @@ import Foundation
 import pgswift
 import Rc2Model
 import Logging
+import SwiftJWT
 
 /// Simple wrapper around contents stored in the authentication token
-public struct LoginToken {
+public struct LoginToken: Codable, Claims {
 	public let id: Int
 	public let userId: Int
 	

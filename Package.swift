@@ -12,6 +12,7 @@ let package = Package(
     	.package(path: "../appmodel2"),
         .package(url: "https://github.com/IBM-Swift/Kitura", from: "2.7.0"),
         .package(url: "https://github.com/IBM-Swift/Kitura-WebSocket.git", from: "2.1.2"),
+		.package(url: "https://github.com/IBM-Swift/Swift-JWT.git", from: "3.5.3"),
 //		.package(url: "https://github.com/IBM-Swift/Kitura-Credentials.git", from: "2.4.1"),
 //		.package(url: "https://github.com/NocturnalSolutions/Kitura-CredentialsLocal.git", from: "2.0.0"),
 		.package(url: "https://github.com/rc2server/CommandLine.git", from: "3.0.0"),
@@ -24,7 +25,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "kappserver",
-			dependencies: ["servermodel", "Kitura", "Kitura-WebSocket", "Rc2Model", "pgswift", "HeliumLogger", "Logging", "CommandLine"]),
+			dependencies: ["servermodel", "Kitura", "Kitura-WebSocket", "Rc2Model", "pgswift", "HeliumLogger", "Logging", "CommandLine", "SwiftJWT"]),
         .target(
         	name: "servermodel",
         	dependencies: ["Rc2Model", "pgswift", "Logging"]),

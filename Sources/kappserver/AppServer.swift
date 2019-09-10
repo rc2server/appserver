@@ -15,6 +15,7 @@ import CommandLine
 
 enum Handlers: String {
 	case info
+	case auth
 }
 
 public class App {
@@ -44,11 +45,16 @@ public class App {
 		let connection = Connection(host: settings.config.dbHost, port: "\(settings.config.dbPort)", user: settings.config.dbUser, password: settings.config.dbPassword, dbname: settings.config.dbName, sslMode: .prefer)
 		dao = Rc2DAO(connection: connection)
 		settings.setDAO(newDao: dao)
+		// auth middleware
+		let mware = AuthMiddleware(settings: settings)
+		router.all(middleware: [mware])
 		// InfoHandler
 		let info = InfoHandler(settings: settings)
 		handlers[.info] = info
 		info.addRoutes(router: router)
-		
+		let auth = AuthHandler(settings: settings)
+		handlers[.auth] = auth
+		auth.addRoutes(router: router)
 	}
 	
 	public func run() throws {

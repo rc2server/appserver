@@ -110,6 +110,8 @@ public struct AppConfiguration: Decodable {
 	public let computeDbHost: String
 	/// The largest amount of file data to return over the websocket. Anything higher should be fetched via REST. In KB
 	public let maximumWebSocketFileSizeKB: Int
+	/// the secret used with HMAC encoding in the authentication process. defaults to some gibberish that should not be used since it it avaiable in the source code.
+	public let jwtHmacSecret: String
 	/// The initial log level. Defaults to info
 //	public let initialLogLevel: LogLevel
 	/// Path to store log files
@@ -138,6 +140,7 @@ public struct AppConfiguration: Decodable {
 		case computeTimeout
 		case computeDbHost
 		case maximumWebSocketFileSizeKB
+		case jwtHmacSecret
 		case logFilePath
 //		case initialLogLevel
 		case urlPrefixToIgnore
@@ -163,6 +166,7 @@ public struct AppConfiguration: Decodable {
 		computePort = try container.decodeIfPresent(UInt16.self, forKey: .computePort) ?? 7714
 		computeTimeout = try container.decodeIfPresent(Double.self, forKey: .computeTimeout) ?? 4.0
 		urlPrefixToIgnore = try container.decodeIfPresent(String.self, forKey: .urlPrefixToIgnore) ?? ""
+		jwtHmacSecret = try container.decodeIfPresent(String.self, forKey: .jwtHmacSecret) ?? "dsgsg89sdfgs32"
 		computeViaK8s = try container.decodeIfPresent(Bool.self, forKey: .computeViaK8s) ?? false
 		k8sStencilPath = try container.decodeIfPresent(String.self, forKey: .k8sStencilPath) ?? "/rc2/k8s-templates"
 		computeImage = try container.decodeIfPresent(String.self, forKey: .computeImage) ?? "docker.rc2.io/compute:latest"

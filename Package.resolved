@@ -11,6 +11,24 @@
         }
       },
       {
+        "package": "CryptorECC",
+        "repositoryURL": "https://github.com/IBM-Swift/BlueECC.git",
+        "state": {
+          "branch": null,
+          "revision": "73a43a5102eafaf4668dbd6e0163bed21c776b9c",
+          "version": "1.2.4"
+        }
+      },
+      {
+        "package": "CryptorRSA",
+        "repositoryURL": "https://github.com/IBM-Swift/BlueRSA.git",
+        "state": {
+          "branch": null,
+          "revision": "e906f5e93426bb43ad7ac37cc20008d8fae608d9",
+          "version": "1.0.34"
+        }
+      },
+      {
         "package": "Socket",
         "repositoryURL": "https://github.com/IBM-Swift/BlueSocket.git",
         "state": {
@@ -98,6 +116,15 @@
           "branch": null,
           "revision": "3357dd9526cdf9436fa63bb792b669e6efdc43da",
           "version": "1.9.0"
+        }
+      },
+      {
+        "package": "SwiftJWT",
+        "repositoryURL": "https://github.com/IBM-Swift/Swift-JWT.git",
+        "state": {
+          "branch": null,
+          "revision": "a0a89d62b8276635f430dfaf8688051cac6b9342",
+          "version": "3.5.3"
         }
       },
       {
