@@ -161,7 +161,7 @@ public struct AppConfiguration: Decodable {
 		dbUser = try container.decodeIfPresent(String.self, forKey: .dbUser) ?? "rc2"
 		dbName = try container.decodeIfPresent(String.self, forKey: .dbName) ?? "rc2"
 		dbPassword = try container.decodeIfPresent(String.self, forKey: .dbPassword) ?? "rc2"
-		dbPort = try container.decodeIfPresent(UInt16.self, forKey: .computePort) ?? 8432
+		dbPort = try container.decodeIfPresent(UInt16.self, forKey: .dbPort) ?? 8432
 		computeHost = try container.decodeIfPresent(String.self, forKey: .computeHost) ?? "compute"
 		computePort = try container.decodeIfPresent(UInt16.self, forKey: .computePort) ?? 7714
 		computeTimeout = try container.decodeIfPresent(Double.self, forKey: .computeTimeout) ?? 4.0

@@ -23,8 +23,9 @@ public class App {
 		case invalidDataDirectory
 	}
 	
-	let router = Router()
-	let logger = HeliumLogger()
+	let router = Router(mergeParameters: false, enableWelcomePage: false)
+	let heLogger = HeliumLogger()
+	let logger = Logger(label: "rc2.app")
 	private var settings: AppSettings!
 	private var dataDirURL: URL!
 	private var dao: Rc2DAO!
@@ -32,7 +33,7 @@ public class App {
 	private var handlers: [Handlers : BaseHandler] = [:]
 	
 	public init() throws {
-		LoggingSystem.bootstrap(logger.makeLogHandler)
+		LoggingSystem.bootstrap(heLogger.makeLogHandler)
 	}
 	
 	public func postInit() throws {
@@ -43,6 +44,7 @@ public class App {
 		router.decoders[.json] = { AppSettings.createJSONDecoder() }
 		// connect to database
 		let connection = Connection(host: settings.config.dbHost, port: "\(settings.config.dbPort)", user: settings.config.dbUser, password: settings.config.dbPassword, dbname: settings.config.dbName, sslMode: .prefer)
+		try connection.open()
 		dao = Rc2DAO(connection: connection)
 		settings.setDAO(newDao: dao)
 		// auth middleware
@@ -58,9 +60,15 @@ public class App {
 	}
 	
 	public func run() throws {
-		try postInit()
-		Kitura.addHTTPServer(onPort: 3472, with: router)
-		Kitura.run()
+		do {
+			try postInit()
+			Kitura.addHTTPServer(onPort: listenPort, with: router)
+			logger.info("listening on \(listenPort)")
+			Kitura.run(exitOnFailure: false)
+			print("finished running")
+		} catch {
+			fatalError("error running: \(error)")
+		}
 	}
 	
 	func parseCommandLine() {
