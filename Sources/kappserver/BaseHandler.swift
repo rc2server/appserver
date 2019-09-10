@@ -24,6 +24,12 @@ class BaseHandler {
 	func addRoutes(router: Router) {
 	}
 	
+	func handle(status: HTTPStatusCode, content: String? = nil, response: RouterResponse) throws {
+		response.status(status)
+		response.send(content)
+		try response.end()
+	}
+	
 	/// handles an error by sending a response. Should be called by subclasses to report errors
 	///
 	/// - Parameters:

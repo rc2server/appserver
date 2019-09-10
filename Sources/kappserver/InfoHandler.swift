@@ -13,7 +13,7 @@ import servermodel
 class InfoHandler: BaseHandler {
 	
 	override func addRoutes(router: Router) {
-		router.all("/info") { [weak self] request, response, next in
+		router.get("/info") { [weak self] request, response, next in
 			guard let user = request.user else {
 				try self?.handle(error: .invalidRequest, response: response)
 				return

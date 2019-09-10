@@ -83,7 +83,7 @@ open class Rc2DAO {
 	///   - id: the desired user's id
 	///   - connection: optional database connection
 	/// - Returns: user with specified id
-	/// - Throws: .duplicate if more than one row in database matched, Node errors if problem parsing results
+	/// - Throws: .duplicate if more than one row in database matched
 	public func getUser(id: Int) throws -> User? {
 		let results = try pgdb.execute(query: "select * from rcuser where id = $1", parameters: [QueryParameter(type: .int8, value: id, connection: pgdb)])
 		return try user(from: results)
