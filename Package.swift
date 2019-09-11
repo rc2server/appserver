@@ -18,6 +18,7 @@ let package = Package(
 		.package(url: "https://github.com/rc2server/CommandLine.git", from: "3.0.0"),
 		.package(url: "https://github.com/apple/swift-log.git", from: "1.1.1"),
 		.package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.0"),
+		.package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
         .package(path: "../pgswift"),
     ],
     targets: [
@@ -25,7 +26,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "kappserver",
-			dependencies: ["servermodel", "Kitura", "Kitura-WebSocket", "Rc2Model", "pgswift", "HeliumLogger", "Logging", "CommandLine", "SwiftJWT"]),
+			dependencies: ["servermodel", "Kitura", "Kitura-WebSocket", "Rc2Model", "pgswift", "HeliumLogger", "Logging", "CommandLine", "SwiftJWT", "ZIPFoundation"]),
         .target(
         	name: "servermodel",
         	dependencies: ["Rc2Model", "pgswift", "Logging"]),
