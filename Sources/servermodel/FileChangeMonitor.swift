@@ -87,11 +87,11 @@ class FileChangeMonitor {
 						lastModified: try Rc2DAO.value(columnName: "lastmodified", results: results, row: row),
 						fileSize: try Rc2DAO.value(columnName: "filesize", results: results, row: row))
 			let changeData = SessionResponse.FileChangedData(type: changeType, file: file, fileId: fileId)
-			observers.forEach {
-				if wspaceId == $0.0 {
-					$0.1(changeData)
+			observers.forEach { (anId, anAction) in
+				if wspaceId == anId {
+					anAction(changeData)
 				} else {
-					logger.info("skipping file observer for wspace \($0.0)")
+					logger.info("skipping file observer for wspace \(anId)")
 				}
 			}
 		} catch {

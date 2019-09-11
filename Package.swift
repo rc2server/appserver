@@ -29,7 +29,7 @@ let package = Package(
 			dependencies: ["servermodel", "Kitura", "Kitura-WebSocket", "Rc2Model", "pgswift", "HeliumLogger", "Logging", "CommandLine", "SwiftJWT", "ZIPFoundation"]),
         .target(
         	name: "servermodel",
-        	dependencies: ["Rc2Model", "pgswift", "Logging"]),
+        	dependencies: ["Rc2Model", "pgswift", "Logging", "SwiftJWT"]),
         .testTarget(
             name: "kappserverTests",
             dependencies: ["kappserver", "servermodelTests"]),
