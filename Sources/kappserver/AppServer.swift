@@ -12,6 +12,7 @@ import Logging
 import servermodel
 import pgswift
 import CommandLine
+import FileKit
 
 enum Handlers: String {
 	case info
@@ -83,7 +84,10 @@ public class App {
 			if dataDir.wasSet {
 				dirPath = dataDir.value!
 			} else {
-				dirPath = ProcessInfo.processInfo.environment["RC2_DATA_DIR"]
+				dirPath = FileKit.projectFolder
+				if dirPath == nil {
+					dirPath = ProcessInfo.processInfo.environment["RC2_DATA_DIR"]
+				}
 			}
 			guard let actualPath = dirPath else { throw Errors.invalidDataDirectory }
 			dataDirURL = URL(fileURLWithPath: actualPath)
