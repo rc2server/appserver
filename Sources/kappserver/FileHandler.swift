@@ -16,9 +16,11 @@ class FileHandler: BaseHandler {
 	
 	override func addRoutes(router: Router) {
 		let prefix = settings.config.urlPrefixToIgnore
+		router.post("\(prefix)/file/:wspaceId", middleware: BodyParser())
 		router.post("\(prefix)/file/:wspaceId") { [unowned self] request, response, next in
 			self.createFile(request: request, response: response, next: next)
 		}
+		router.put("\(prefix)/file/:fileId", middleware: BodyParser())
 		router.put("\(prefix)/file/:fileId") { [unowned self] request, response, next in
 			self.changeContents(request: request, response: response, next: next)
 		}
@@ -31,7 +33,8 @@ class FileHandler: BaseHandler {
 		guard let wspaceIdStr = request.parameters["wspaceId"],
 			let wspaceId = Int(wspaceIdStr),
 			let filename = request.headers[fileNameHeader],
-			let _ = try? settings.dao.getWorkspace(id: wspaceId),
+			let wspace = try? settings.dao.getWorkspace(id: wspaceId),
+			wspace.userId == request.user?.id ?? -1,
 			let rawData = request.body?.asRaw
 			else {
 				logger.warning("failed to create file")

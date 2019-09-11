@@ -117,7 +117,7 @@ class ModelHandler: BaseHandler {
 			let tmpDir = topTmpDir.appendingPathComponent(UUID().uuidString, isDirectory: true)
 			try fm.createDirectory(at: tmpDir, withIntermediateDirectories: true, attributes: nil)
 			try fm.unzipItem(at: zipTmp, to: tmpDir)
-			try? fm.removeItem(at: tmpDir)
+			try? fm.removeItem(at: zipTmp)
 			return tmpDir
 		} catch {
 			logger.warning("error upacking zip file: \(error)")

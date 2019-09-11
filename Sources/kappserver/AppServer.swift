@@ -17,6 +17,8 @@ import FileKit
 enum Handlers: String {
 	case info
 	case auth
+	case model
+	case file
 }
 
 public class App {
@@ -55,9 +57,18 @@ public class App {
 		let info = InfoHandler(settings: settings)
 		handlers[.info] = info
 		info.addRoutes(router: router)
+		// auth handler
 		let auth = AuthHandler(settings: settings)
 		handlers[.auth] = auth
 		auth.addRoutes(router: router)
+		// model handler
+		let model = ModelHandler(settings: settings)
+		handlers[.model] = model
+		model.addRoutes(router: router)
+		// file handler
+		let files = FileHandler(settings: settings)
+		handlers[.file] = files
+		files.addRoutes(router: router)
 	}
 	
 	public func run() throws {
