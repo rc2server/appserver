@@ -1,6 +1,6 @@
-# kappserver
+# appserver
 
-A description of this package.
+The latest iteration of the appserver. Written in swift using Kitura. Doesn't really function yet, but need to keep it working on macOS and Linux.
 
 ## Testing
 
