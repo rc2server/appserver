@@ -29,10 +29,11 @@ class AuthHandler: BaseHandler {
 	}
 	
 	override func addRoutes(router: Router) {
-		router.post("/login") { [weak self] request, response, next in
+		let prefix = settings.config.urlPrefixToIgnore
+		router.post("\(prefix)/login") { [weak self] request, response, next in
 			self?.loginHandler(request: request, response: response, handler: next)
 		}
-		router.delete("/login") { [weak self] request, response, next in
+		router.delete("\(prefix)/login") { [weak self] request, response, next in
 			self?.logoutHandler(request: request, response: response, next: next)
 		}
 	}

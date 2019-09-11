@@ -13,7 +13,8 @@ import servermodel
 class InfoHandler: BaseHandler {
 	
 	override func addRoutes(router: Router) {
-		router.get("/info") { [weak self] request, response, next in
+		let prefix = settings.config.urlPrefixToIgnore
+		router.get("\(prefix)/info") { [weak self] request, response, next in
 			guard let user = request.user else {
 				try self?.handle(error: .invalidRequest, response: response)
 				return

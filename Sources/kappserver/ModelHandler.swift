@@ -18,11 +18,12 @@ class ModelHandler: BaseHandler {
 	}
 
 	override func addRoutes(router: Router) {
-		router.post("/proj/:projId/wspace", middleware: BodyParser())
-		router.post("/proj/:projId/wspace") { [weak self] request, response, next in
+		let prefix = settings.config.urlPrefixToIgnore
+		router.post("\(prefix)/proj/:projId/wspace", middleware: BodyParser())
+		router.post("\(prefix)/proj/:projId/wspace") { [weak self] request, response, next in
 			self?.createWorkspace(request: request, response: response, next: next)
 		}
-		router.delete("/proj/:projId/wspace/:wspaceId") { [weak self] request, response, next in
+		router.delete("\(prefix)/proj/:projId/wspace/:wspaceId") { [weak self] request, response, next in
 			self?.deleteWorkspace(request: request, response: response, next: next)
 		}
 	}
