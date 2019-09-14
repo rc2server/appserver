@@ -13,6 +13,7 @@ import servermodel
 import pgswift
 import CommandLine
 import FileKit
+import KituraWebSocket
 
 enum Handlers: String {
 	case info
@@ -34,6 +35,7 @@ public class App {
 	private var dao: Rc2DAO!
 	private var listenPort = 8088
 	private var handlers: [Handlers : BaseHandler] = [:]
+	private var sessionService: SessionService!
 	
 	public init() throws {
 		LoggingSystem.bootstrap(heLogger.makeLogHandler)
@@ -69,6 +71,9 @@ public class App {
 		let files = FileHandler(settings: settings)
 		handlers[.file] = files
 		files.addRoutes(router: router)
+		// websocket
+		sessionService = SessionService(settings: settings, logger: logger)
+		WebSocket.register(service:sessionService,  onPath: "\(settings.config.urlPrefixToIgnore)/ws/:wsId")
 	}
 	
 	public func run() throws {
