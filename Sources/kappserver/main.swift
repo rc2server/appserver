@@ -1,6 +1,4 @@
-import Foundation
-import Kitura
-
+import appcore
 
 do {
 	let server = try App()

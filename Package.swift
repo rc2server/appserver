@@ -27,13 +27,19 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "kappserver",
+			dependencies: ["appcore"]),
+		.target(
+			name: "appcore",
 			dependencies: ["servermodel", "Kitura", "Kitura-WebSocket", "Rc2Model", "pgswift", "HeliumLogger", "Logging", "CommandLine", "SwiftJWT", "ZIPFoundation", "FileKit", "Socket", "BrightFutures"]),
         .target(
         	name: "servermodel",
         	dependencies: ["Rc2Model", "pgswift", "Logging", "SwiftJWT"]),
         .testTarget(
             name: "kappserverTests",
-            dependencies: ["kappserver", "servermodelTests"]),
+            dependencies: ["kappserver", "appcoreTests", "servermodelTests"]),
+        .testTarget(
+            name: "appcoreTests",
+            dependencies: ["appcore"]),
 		.testTarget(
 			name: "servermodelTests",
 			dependencies: ["servermodel"]),
