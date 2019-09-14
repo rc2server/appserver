@@ -27,6 +27,8 @@ open class Rc2DAO {
 	// file monitor
 	var fileMonitor: FileChangeMonitor?
 	
+	public lazy var tokenDAO: LoginTokenDAO = { createTokenDAO() }()
+	
 	public init(connection: Connection) {
 		queue = DispatchQueue(label: "database serial queue")
 		pgdb = connection

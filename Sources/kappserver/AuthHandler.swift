@@ -7,6 +7,7 @@
 
 import Foundation
 import Kitura
+import KituraNet
 import servermodel
 import Rc2Model
 import Logging
@@ -114,12 +115,28 @@ public struct HTTPHeaders {
 	/// Authorization header
 	public static let authorization = "Authorization"
 
-	/// Parses authorization header and returns the token found there
+	/// Extract an auth token from a RouterRequest
 	///
-	/// - Parameter request: the request with the authorization header
+	/// - Parameter request: the request who's headers to extract from
 	/// - Returns: the token, or nil if not found
 	public static func extractAuthToken(request: RouterRequest) -> String? {
-		guard let rawHeader = request.headers[HTTPHeaders.authorization] else { return nil }
+		return extractAuthToken(authHeader: request.headers[HTTPHeaders.authorization])
+	}
+
+	/// Extract an auth token from a ServerRequest
+	///
+	/// - Parameter request: the request who's headers to extract from
+	/// - Returns: the token, or nil if not found
+	public static func extractAuthToken(request: ServerRequest) -> String? {
+		return extractAuthToken(authHeader: request.headers[HTTPHeaders.authorization]?[0])
+	}
+
+	/// Parses authorization header and returns the token found there
+	///
+	/// - Parameter authHeader: The authentication header value. if nil, returns nil.
+	/// - Returns: the token, or nil if not found
+	public static func extractAuthToken(authHeader: String?) -> String? {
+		guard let rawHeader = authHeader else { return nil }
 		//extract the bearer token
 		let prefix = "Bearer "
 		let tokenIndex = rawHeader.index(rawHeader.startIndex, offsetBy: prefix.count)

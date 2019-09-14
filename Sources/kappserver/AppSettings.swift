@@ -9,6 +9,7 @@ import Foundation
 import servermodel
 import Logging
 import KituraContracts
+import SwiftJWT
 
 public class AppSettings: BodyEncoder, BodyDecoder {
 	let logger = Logger(label: "AppSettings")
@@ -24,6 +25,8 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 	private let encoder: JSONEncoder
 	/// the decoder used, implementation detail.
 	private let decoder: JSONDecoder
+	private let jwtSigner:  JWTSigner
+	private let jwtVerifier: JWTVerifier
 
 	/// Create a JSONEncoder with the configuration used by the app
 	///
@@ -61,6 +64,10 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		decoder = AppSettings.createJSONDecoder()
 		encoder = AppSettings.createJSONEncoder()
 		
+		let secretData = settings.config.jwtHmacSecret.data(using: .utf8, allowLossyConversion: true)!
+		jwtSigner = JWTSigner.hs512(key: secretData)
+		jwtVerifier = JWTVerifier.hs512(key: secretData)
+
 		var configUrl: URL!
 		do {
 			configUrl = dataDirURL.appendingPathComponent("config.json")
@@ -69,6 +76,29 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		} catch {
 			fatalError("failed to load config file \(configUrl.absoluteString) \(error)")
 		}
+	}
+	
+	/// Parses an Authorization header (Bearer <token>) and extracts the LoginToken with userId
+	///
+	/// - Parameter string: The value of an Authorization header
+	/// - Returns: the embedded LoginToken, or nil if there is an error
+	public func loginToken(from string: String?) -> LoginToken? {
+		guard let rawHeader = string else { return nil }
+		//extract the bearer token
+		let prefix = "Bearer "
+		let tokenIndex = rawHeader.index(rawHeader.startIndex, offsetBy: prefix.count)
+		let tokenStr = String(rawHeader[tokenIndex...])
+
+		let verified = JWT<LoginToken>.verify(tokenStr, using: jwtVerifier)
+		guard verified else { return nil }
+		guard let token = try? JWT<LoginToken>(jwtString: tokenStr, verifier: jwtVerifier),
+			dao.tokenDAO.validate(token: token.claims),
+			dao.tokenDAO.validate(token: token.claims)
+		else {
+			logger.debug("failed to validate extracted token")
+			return nil
+		}
+		return token.claims
 	}
 	
 	func setDAO(newDao: Rc2DAO) {
