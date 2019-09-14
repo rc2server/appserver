@@ -26,9 +26,8 @@ extension Variable {
 	/// Parses a legacy compute json dictionary into a Variable
 	public static func makeFromLegacy(json: JSON, logger: Logger?) throws -> Variable {
 		do {
-			guard let vname = json["name"].string,
-				let className = json["className"].string
-			else { throw VariableError("missing required values") }
+			guard let vname = json["name"].string else { throw VariableError("missing name") }
+			guard let className = json["class"].string else { throw VariableError("missing className") }
 			let vlen = json["length"].int
 			let summary = json["summary"].string ?? ""
 			let primitive = json["primitive"].bool ?? false

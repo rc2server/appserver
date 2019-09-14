@@ -119,23 +119,31 @@ class ComputeCoder {
 	// MARK: - response handling
 	
 	func parseResponse(data: Data) throws -> ComputeResponse {
-		guard let json = try? JSON(data: data), let msg = json["msg"].string
-			else { throw ComputeError.invalidInput }
-		let queryId = json["queryId"].int
-		let transId = queryIds[queryId ?? -1] // trans/query ids are always positive, avoid nil check
-		let response = try ComputeResponse(messageType: msg, jsonData: data, decoder: decoder)
-		switch response {
-		case .execComplete(let resp):
-			guard let transId = transId else { throw ComputeError.invalidFormat }
-			return .execComplete(resp.withTransaction(transId))
-		case .results(let resp):
-			guard let transId = transId else { throw ComputeError.invalidFormat }
-			return .results(resp.withTransaction(transId))
-		case .showOutput(let resp):
-			guard let transId = transId else { throw ComputeError.invalidFormat }
-			return .showOutput(resp.withTransaction(transId))
-		default:
-			return response
+		do {
+			let json = try JSON(data: data)
+			guard let msg = json["msg"].string
+				else { throw ComputeError.invalidInput }
+			let queryId = json["queryId"].int
+			let transId = queryIds[queryId ?? -1] // trans/query ids are always positive, avoid nil check
+			let response = try ComputeResponse(messageType: msg, jsonData: data, decoder: decoder)
+			switch response {
+			case .execComplete(let resp):
+				guard let transId = transId else { throw ComputeError.invalidFormat }
+				return .execComplete(resp.withTransaction(transId))
+			case .results(let resp):
+				guard let transId = transId else { throw ComputeError.invalidFormat }
+				return .results(resp.withTransaction(transId))
+			case .showOutput(let resp):
+				guard let transId = transId else { throw ComputeError.invalidFormat }
+				return .showOutput(resp.withTransaction(transId))
+			default:
+				return response
+			}
+		} catch let error where error is ComputeError {
+			throw error
+		} catch {
+			logger.warning("parseResponse threw error \(error)")
+			throw error
 		}
 	}
 	

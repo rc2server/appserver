@@ -7,6 +7,10 @@
 
 import Foundation
 import Rc2Model
+import servermodel
+import Logging
+
+fileprivate let logger = Logger(label: "rc2.ComputeResponse")
 
 /// responses that can be returned by the comppute engine
 public enum ComputeResponse: Equatable {
@@ -21,33 +25,38 @@ public enum ComputeResponse: Equatable {
 	case execComplete(ExecComplete)
 	
 	init(messageType: String, jsonData: Data, decoder: JSONDecoder) throws {
-		switch messageType {
-		case "openresponse":
-			let rsp = try decoder.decode(Open.self, from: jsonData)
-			self = .open(rsp)
-		case "execComplete":
-			let rsp = try decoder.decode(ExecComplete.self, from: jsonData)
-			self = .execComplete(rsp)
-		case "results":
-			let rsp = try decoder.decode(Results.self, from: jsonData)
-			self = .results(rsp)
-		case "showoutput":
-			let rsp = try decoder.decode(ShowOutput.self, from: jsonData)
-			self = .showOutput(rsp)
-		case "variableupdate":
-			let rsp = try decoder.decode(VariableUpdate.self, from: jsonData)
-			self = .variableUpdate(rsp)
-		case "variablevalue":
-			let rsp = try decoder.decode(VariableValue.self, from: jsonData)
-			self = .variableValue(rsp)
-		case "help":
-			let rsp = try decoder.decode(Help.self, from: jsonData)
-			self = .help(rsp)
-		case "error":
-			let rsp = try decoder.decode(Error.self, from: jsonData)
-			self = .error(rsp)
-		default:
-			throw ComputeError.invalidInput
+		do {
+			switch messageType {
+			case "openresponse":
+				let rsp = try decoder.decode(Open.self, from: jsonData)
+				self = .open(rsp)
+			case "execComplete":
+				let rsp = try decoder.decode(ExecComplete.self, from: jsonData)
+				self = .execComplete(rsp)
+			case "results":
+				let rsp = try decoder.decode(Results.self, from: jsonData)
+				self = .results(rsp)
+			case "showoutput":
+				let rsp = try decoder.decode(ShowOutput.self, from: jsonData)
+				self = .showOutput(rsp)
+			case "variableupdate":
+				self = .variableUpdate(try VariableUpdate(json: try JSON(data: jsonData)))
+			case "variablevalue":
+				self = .variableValue(try VariableValue(json: try JSON(data: jsonData)))
+			case "help":
+				let rsp = try decoder.decode(Help.self, from: jsonData)
+				self = .help(rsp)
+			case "error":
+				let rsp = try decoder.decode(Error.self, from: jsonData)
+				self = .error(rsp)
+			default:
+				throw ComputeError.invalidInput
+			}
+		} catch let error where error is ComputeError {
+			throw error
+		} catch {
+			logger.warning("error parsing compute response: \(error)")
+			throw error
 		}
 	}
 	
@@ -77,6 +86,18 @@ public enum ComputeResponse: Equatable {
 		let startTime: String
 		/// any client data that was passed in the request
 		let clientData: [String : String]?
+
+		// initializer that converts the [String : Any] dictionary to a variable
+		init(json: JSON) throws {
+			let dname = json["name"].string
+			guard dname != nil else { throw ComputeError.invalidInput }
+			name = dname!
+			startTime = json["startTime"].string ?? ""
+			clientData = json["clientData"].dictionary?.mapValues { $0.string ?? "" }
+
+			guard json["value"].dictionary != nil else { throw ComputeError.invalidInput }
+			value = try Variable.makeFromLegacy(json: json["value"], logger: logger)
+		}
 	}
 
 	/// response frpm a list variables command, also sent when there are changes if the client is watching for changes
@@ -102,12 +123,30 @@ public enum ComputeResponse: Equatable {
 			case removed = "variablesRemoved"
 			case environmentId = "contextId"
 		}
+		
+		// initializer that converts the [String : Any] dictionaries to [String : Variable] which JSON Serialization won't due for legacy json
+		init(json: JSON) throws {
+			let dval = json["delta"].bool
+			guard dval != nil else { logger.warning("VariableUpdate without delta value"); throw ComputeError.invalidInput }
+			delta = dval!
+			environmentId = json["contextId"].int
+			clientData = json["clientData"].dictionary?.mapValues { $0.string ?? "" }
+			removed = json["variablesRemoved"].array?.map { $0.string ?? "" } ?? []
+			let vars = json["variables"].dictionary ?? [:]
+			if vars.count > 0 {
+				variables = try vars.mapValues {  try Variable.makeFromLegacy(json: $0, logger: logger) }
+			} else {
+				variables = [:]
+			}
+			let addedDict = json["variablesAdded"].dictionary ?? [:]
+			added = try addedDict.mapValues { try Variable.makeFromLegacy(json: $0, logger: logger) }
+		}
 	}
 
 	/// response when an error occured
-	public struct Error: Codable, Hashable {
+	public struct Error: Codable, Equatable {
 		/// the error code
-		let code: Int
+		let errorCode: SessionErrorCode
 		/// details of the error, for logging not display to user
 		let details: String
 		/// queryId if one accompanied the request
@@ -116,14 +155,14 @@ public enum ComputeResponse: Equatable {
 		let transId: String?
 		
 		enum CodingKeys: String, CodingKey {
-			case code = "errorCode"
+			case errorCode
 			case details = "errorDetails"
 			case queryId
 			case transId
 		}
 		
 		func withTransactionId(_ transId: String) -> Error {
-			return Error(code: code, details: details, queryId: queryId, transId: transId)
+			return Error(errorCode: errorCode, details: details, queryId: queryId, transId: transId)
 		}
 	}
 
@@ -173,7 +212,7 @@ public enum ComputeResponse: Equatable {
 	public struct ExecComplete: Decodable, Hashable {
 		let expectShowOutput: Bool
 		let queryId: Int
-		let startTime: String
+		let startTime: String?
 		let images: [Int]?
 		let batchNumber: Int?
 		let clientData: [String:String]?
