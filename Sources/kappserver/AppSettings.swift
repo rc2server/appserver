@@ -138,7 +138,9 @@ public struct AppConfiguration: Decodable {
 	public let computeTimeout: Double
 	/// The db host name to send to the compute server (which because of dns can be different)
 	public let computeDbHost: String
-	/// The largest amount of file data to return over the websocket. Anything higher should be fetched via REST. In KB
+	/// The size of the read buffer for messages from the compute engine. Must be between 512 KB and 20 MB. Defaults to 1 MB. should be larger than maximumWebSocketFileSizeKB
+	public let computeReadBufferSize: Int
+	/// The largest amount of file data to return over the websocket. Anything higher should be fetched via REST. In KB. Defaults to 600.
 	public let maximumWebSocketFileSizeKB: Int
 	/// the secret used with HMAC encoding in the authentication process. defaults to some gibberish that should not be used since it it avaiable in the source code.
 	public let jwtHmacSecret: String
@@ -171,6 +173,7 @@ public struct AppConfiguration: Decodable {
 		case computeDbHost
 		case maximumWebSocketFileSizeKB
 		case jwtHmacSecret
+		case computeReadBufferSize
 		case logFilePath
 //		case initialLogLevel
 		case urlPrefixToIgnore
@@ -203,6 +206,13 @@ public struct AppConfiguration: Decodable {
 		let cdb = try container.decodeIfPresent(String.self, forKey: .computeDbHost)
 		computeDbHost = cdb == nil ? dbHost : cdb!
 		computeStartupDelay = try container.decodeIfPresent(Int.self, forKey: .computeStartupDelay) ?? 2000
+		// must be > 256 KB, less than 20 MB
+		if let desiredBufSize = try container.decodeIfPresent(Int.self, forKey: .computeReadBufferSize),
+			desiredBufSize > 256, desiredBufSize < 20 * 1024 * 1024 {
+			computeReadBufferSize = desiredBufSize
+		} else {
+			computeReadBufferSize = 1024 * 1024
+		}
 		// default to 600 KB. Some kind of issues with sending messages larger than UInt16.max
 		if let desiredSize = try container.decodeIfPresent(Int.self, forKey: .maximumWebSocketFileSizeKB),
 			desiredSize <= 600, desiredSize > 0
