@@ -47,6 +47,15 @@
         }
       },
       {
+        "package": "BrightFutures",
+        "repositoryURL": "https://github.com/Thomvis/BrightFutures.git",
+        "state": {
+          "branch": null,
+          "revision": "9279defa6bdc21501ce740266e5a14d0119ddc63",
+          "version": "8.0.1"
+        }
+      },
+      {
         "package": "CommandLine",
         "repositoryURL": "https://github.com/rc2server/CommandLine.git",
         "state": {
