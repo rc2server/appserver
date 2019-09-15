@@ -38,7 +38,7 @@ class ComputeCoder {
 	///
 	/// - Parameter name: The name of the variable to get
 	/// - Returns: data to send to compute server
-	func getVariable(name: String, contextId: Int?, clientIdentifier: Int? = nil) throws -> Data {
+	func getVariable(name: String, contextId: Int?, clientIdentifier: String? = nil) throws -> Data {
 		let obj = GetVariableCommand(name: name, contextId: contextId, clientIdentifier: clientIdentifier)
 		return try encoder.encode(obj)
 	}
@@ -128,13 +128,13 @@ class ComputeCoder {
 			let response = try ComputeResponse(messageType: msg, jsonData: data, decoder: decoder)
 			switch response {
 			case .execComplete(let resp):
-				guard let transId = transId else { throw ComputeError.invalidFormat }
+				guard let transId = transId else { throw ComputeError.requiredFieldMissing }
 				return .execComplete(resp.withTransaction(transId))
 			case .results(let resp):
-				guard let transId = transId else { throw ComputeError.invalidFormat }
+				guard let transId = transId else { throw ComputeError.requiredFieldMissing }
 				return .results(resp.withTransaction(transId))
 			case .showOutput(let resp):
-				guard let transId = transId else { throw ComputeError.invalidFormat }
+				guard let transId = transId else { throw ComputeError.requiredFieldMissing }
 				return .showOutput(resp.withTransaction(transId))
 			default:
 				return response
@@ -192,10 +192,10 @@ class ComputeCoder {
 		static let clientIdentKey = "clientIdent"
 		let msg = "getVariable"
 		let argument: String
-		let clientData: [String: Int]?
+		let clientData: [String: String]?
 		let contextId: Int?
 		
-		init(name: String, contextId: Int?, clientIdentifier: Int? = nil) {
+		init(name: String, contextId: Int?, clientIdentifier: String? = nil) {
 			argument = name
 			self.contextId = contextId
 			if let cident = clientIdentifier {

@@ -82,10 +82,14 @@ public enum ComputeResponse: Equatable {
 		let name: String
 		/// the value as an object
 		let value: Variable
+		/// the environment the value came from
+		let contextId: Int?
 		/// the start if one was passed in the request, otherwise an empty string
 		let startTime: String
 		/// any client data that was passed in the request
 		let clientData: [String : String]?
+		/// the clientId that was passed in the GetVariable command via clientData
+		let clientId: String?
 
 		// initializer that converts the [String : Any] dictionary to a variable
 		init(json: JSON) throws {
@@ -94,6 +98,8 @@ public enum ComputeResponse: Equatable {
 			name = dname!
 			startTime = json["startTime"].string ?? ""
 			clientData = json["clientData"].dictionary?.mapValues { $0.string ?? "" }
+			contextId = json["contextId"].int
+			clientId = clientData?["clientIdent"]?.string
 
 			guard json["value"].dictionary != nil else { throw ComputeError.invalidInput }
 			value = try Variable.makeFromLegacy(json: json["value"], logger: logger)
