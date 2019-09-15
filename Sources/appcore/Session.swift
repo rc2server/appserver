@@ -85,7 +85,27 @@ class Session {
 	}
 	
 	func handle(command: SessionCommand, from: SessionConnection) {
-		
+		logger.info("got command: \(command)")
+		switch command {
+		case .executeFile(let params):
+			handleExecuteFile(params: params)
+		case .execute(let params):
+			handleExecute(params: params)
+		case .fileOperation(let params):
+			handleFileOperation(params: params)
+		case .getVariable(let params):
+			handleGetVariable(params: params, connnection: from)
+		case .help(let topic):
+			handleHelp(topic: topic, connetion: from)
+		case .info:
+			sendSessionInfo(connection: from)
+		case .save(let params):
+			handleSave(params: params, connection: from)
+		case .clearEnvironment(let envId):
+			handleClearEnvironment(id: envId)
+		case .watchVariables(let params):
+			handleWatchVariables(params: params, connection: from)
+		}
 	}
 
 	// MARK: - client communications
@@ -185,7 +205,37 @@ extension Session: ComputeWorkerDelegate {
 	}
 	
 	func handleCompute(statusUpdate: ComputeState) {
-		
+		var clientUpdate: SessionResponse.ComputeStatus?
+		switch statusUpdate {
+		case .uninitialized:
+			fatalError("state should be impossible")
+		case .initialHostSearch:
+			clientUpdate = .initializing
+		case .loading:
+			clientUpdate = .loading
+		case .connecting:
+			clientUpdate = .initializing
+		case .connected:
+			// send open connection message
+			do {
+				logger.debug("connecting to compute with '\(settings.config.dbPassword)'")
+				let message = try coder.openConnection(wspaceId: workspace.id, sessionId: sessionId!, dbhost: settings.config.computeDbHost, dbuser: settings.config.dbUser, dbname: settings.config.dbName, dbpassword: settings.config.dbPassword)
+				try worker!.send(data: message)
+			} catch {
+				logger.error("failed to send open connection message: \(error)")
+				broadcastToAllClients(object: SessionResponse.ComputeStatus.failed)
+				try? shutdown()
+			}
+		case .failedToConnect:
+			clientUpdate = .failed
+		case .unusable:
+			clientUpdate = .failed
+		}
+		if let status = clientUpdate {
+			// inform clients that status changed
+			logger.info("sending compute status \(status)")
+			broadcastToAllClients(object: SessionResponse.computeStatus(status))
+		}
 	}
 }
 
