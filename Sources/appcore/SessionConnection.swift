@@ -23,7 +23,7 @@ final class SessionConnection: Hashable {
 	let settings: AppSettings
 //	private let delegate: SessionConnectionDelegate
 	private let lock = DispatchSemaphore(value: 1)
-	internal private(set) var watchingVariaables = false
+	var watchingVariaables = false
 
 	var id: String { return socket.id }
 	
@@ -46,10 +46,9 @@ final class SessionConnection: Hashable {
 		socket.close(reason: reason, description: nil)
 	}
 
-	func send(command: SessionCommand) throws {
+	func send(data: Data) throws {
 		lock.wait()
 		defer { lock.signal() }
-		let data = try settings.encode(command)
 		socket.send(message: data)
 	}
 	
