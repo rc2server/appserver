@@ -8,15 +8,22 @@
 import Foundation
 
 public enum ComputeError: Error {
+	/// messsage didn't have the correct header
 	case invalidHeader
-	/// failed to connect to the monolithic server, assume can't retry connection
+	/// failed to connect to the compute engine server, assume can't retry connection
 	case failedToConnect
+	/// an error happened reading/parsing the raw data received over the network. Should be very rare, unless hack attempt.
 	case failedToReadMessage
+	/// failed to write data to network. Should be very rare.
 	case failedToWrite
-	case invalidFormat
+	/// a required field was missing from the server. Should never happen. Input was ignored
+	case requiredFieldMissing
 	/// the input passed to the coder was not in the propper format
 	case invalidInput
+	/// failed because not connected
 	case notConnected
+	/// Kubernetes failed to launch too many times
 	case tooManyCrashes
+	/// some other type of error
 	case unknown
 }
