@@ -9,6 +9,7 @@ import Foundation
 import Dispatch
 import Logging
 import Rc2Model
+import servermodel
 import Kitura
 import KituraWebSocket
 
@@ -36,6 +37,8 @@ class Session {
 		logger.info("session for wspace \(workspace.id) closed")
 	}
 	
+	// MARK: - basic control
+	
 	func start(k8sServer: K8sServer? = nil) throws {
 		
 	}
@@ -44,6 +47,8 @@ class Session {
 		if let sessionId = sessionId {
 			try settings.dao.closeSessionRecord(sessionId: sessionId)
 		}
+		lock.wait()
+		defer { lock.signal() }
 		do {
 			try worker?.send(data: try coder.close())
 		} catch {
@@ -53,31 +58,379 @@ class Session {
 
 	}
 	
+	// MARK: - client managemenet
+	
 	func added(connection: SessionConnection) {
-		
+		lock.wait()
+		defer { lock.signal() }
+		connections.insert(connection)
+		lastClientDisconnect = nil
 	}
 	
 	func removed(connection: SessionConnection) {
-		
+		lock.wait()
+		defer { lock.signal() }
+		connections.remove(connection)
+		if connections.count == 0 {
+			lastClientDisconnect = Date()
+		}
+		// see if can stop watching variables
+		if watchingVariables && !connections.map({ $0.watchingVariaables}).contains(true) {
+			do {
+				try worker?.send(data: coder.toggleVariableWatch(enable: false, contextId: nil))
+			} catch {
+				logger.warning("error disabling variable watch: \(error)")
+			}
+		}
 	}
 	
 	func handle(command: SessionCommand, from: SessionConnection) {
 		
 	}
+
+	// MARK: - client communications
+	
+	/// Send a message to all clients
+	///
+	/// - Parameter object: the message to send
+	func broadcastToAllClients<T: Encodable>(object: T) {
+		do {
+			lock.wait()
+			defer { lock.signal() }
+			let data = try settings.encode(object)
+			connections.forEach {
+				do {
+					try $0.send(data: data)
+				} catch {
+					logger.warning("error sending to single client (\(error))")
+				}
+			}
+		} catch {
+			logger.warning("error sending to all clients (\(error))")
+		}
+	}
+	
+	func broadcast<T: Encodable>(object: T, toClient clientId: String) {
+		do {
+			let data = try settings.encode(object)
+			lock.wait()
+			defer { lock.signal() }
+			if let socket = connections.first(where: { $0.id == clientId } ) {
+				try socket.send(data: data)
+			}
+		} catch {
+			logger.warning("error sending to single client (\(error))")
+		}
+	}
+	
+	// MARK: - private methods
+	
+	/// send updated workspace info
+	private func sendSessionInfo(connection: SessionConnection?) {
+		do {
+			let response = SessionResponse.InfoData(workspace: workspace, files: try settings.dao.getFiles(workspace: workspace))
+			broadcastToAllClients(object: SessionResponse.info(response))
+		} catch {
+			logger.warning("error sending info: \(error)")
+		}
+	}
+
 }
 
+// MARK: - Hashable
+extension Session: Hashable {
+	static func == (lhs: Session, rhs: Session) -> Bool {
+		return lhs.workspace.id == rhs.workspace.id
+	}
+	
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(ObjectIdentifier(self))
+	}
+}
+
+// MARK: - ComputeWorkerDelegate
 extension Session: ComputeWorkerDelegate {
 	func handleCompute(data: Data) {
-		
+		do {
+			let response = try coder.parseResponse(data: data)
+			switch response {
+			case .open(let openData):
+				handleOpenResponse(success: openData.success, errorMessage: openData.errorMessage)
+			case .help(let helpData):
+				handleHelpResponse(data: helpData)
+			case .variableValue(let varData):
+				handleVariableValueResponse(data: varData)
+			case .variableUpdate(let varData):
+				handleVariableListResponse(data: varData)
+			case .error(let errData):
+				handleErrorResponse(data: errData)
+			case .results(let rdata):
+				handleResultsResponse(data: rdata)
+			case .showOutput(let odata):
+				handleShowOutput(data: odata)
+			case .execComplete(let edata):
+				handleExecComplete(data: edata)
+			}
+		} catch {
+			logger.warning("failed to decode response from compute: \(error)")
+		}
 	}
 	
 	func handleCompute(error: ComputeError) {
-		
+		logger.warning("error from compute: \(error)")
+		// TODO: better handling of the error, like reconnecting
+		let serr = SessionError.compute(code: .unknown, details: error.localizedDescription, transactionId: nil)
+		let edata = SessionResponse.ErrorData(transactionId: nil, error: serr)
+		broadcastToAllClients(object: SessionResponse.error(edata))
 	}
 	
 	func handleCompute(statusUpdate: ComputeState) {
 		
 	}
+}
+
+// MARK: - response handling
+extension Session {
+	func handleHelpResponse(data: ComputeResponse.Help) {
+		var outPaths = [String: String]()
+		data.paths.forEach { value in
+			guard let rng = value.range(of: "/library/") else { return }
+			//strip off everything before "/library"
+			let idx = value.index(rng.upperBound, offsetBy: -1)
+			var aPath = String(value[idx...])
+			//replace "help" with "html"
+			aPath = aPath.replacingOccurrences(of: "/help/", with: "/html/")
+			aPath.append(".html") // add file extension
+			// split components
+			var components = value.split(separator: "/")
+			let funName = components.last!
+			let pkgName = components.count > 3 ? components[components.count - 3] : "Base"
+			let title = String(funName + " (" + pkgName + ")")
+			//add to outPaths with the display title as key, massaged path as value
+			outPaths[title] = aPath
+		}
+		let helpData = SessionResponse.HelpData(topic: data.topic, items: outPaths)
+		broadcastToAllClients(object: SessionResponse.help(helpData))
+	}
 	
+	func handleShowOutput(data: ComputeResponse.ShowOutput) {
+		guard let transId = data.transId else {
+			logger.error("received show output w/o a transaction id. ignoring")
+			return
+		}
+		do {
+			//refetch from database so we have updated information
+			//if file is too large, only send meta info
+			guard let file = try settings.dao.getFile(id: data.fileId, userId: workspace.userId) else {
+				logger.warning("failed to find file \(data.fileId) to show output")
+				handleErrorResponse(data: ComputeResponse.Error(errorCode: .unknownFile, details: "unknown file requested", queryId: data.queryId, transId: transId))
+				return
+			}
+			var fileData: Data? = nil
+			if file.fileSize < (settings.config.maximumWebSocketFileSizeKB * 1024) {
+				fileData = try settings.dao.getFileData(fileId: data.fileId)
+			}
+			let forClient = SessionResponse.ShowOutputData(transactionid: transId, file: file, fileData: fileData)
+			broadcastToAllClients(object: SessionResponse.showOutput(forClient))
+		} catch {
+			logger.warning("error handling show file: \(error)")
+		}
+
+	}
 	
+	func handleExecComplete(data: ComputeResponse.ExecComplete) {
+		var images = [SessionImage]()
+		do {
+			images = try settings.dao.getImages(imageIds: data.images)
+		} catch {
+			logger.warning("Error fetching images from compute \(error)")
+		}
+		guard data.transId != nil else {
+			assertionFailure("execComplete response sent w/o a transactionId")
+			logger.warning("execComplete response sent w/o a transactionId. skipping")
+			return
+		}
+		let cdata = SessionResponse.ExecCompleteData(transactionId: data.transId!, batchId: data.batchNumber ?? 0, expectShowOutput: data.expectShowOutput, images: images)
+		broadcastToAllClients(object: SessionResponse.execComplete(cdata))
+	}
+	
+	func handleResultsResponse(data: ComputeResponse.Results) {
+		guard data.transId != nil else {
+			logger.warning("results response sent w/o a transactionId")
+			assertionFailure("results response sent w/o a transactionId")
+			return
+		}
+		let sresults = SessionResponse.ResultsData(transactionId: data.transId!, output: data.string, isError: data.isError)
+		broadcastToAllClients(object: SessionResponse.results(sresults))
+	}
+	
+	func handleVariableValueResponse(data: ComputeResponse.VariableValue) {
+		let value = SessionResponse.VariableValueData(value: data.value, contextId: data.contextId)
+		let responseObject = SessionResponse.variableValue(value)
+		if let clientId = data.clientId {
+			broadcast(object: responseObject, toClient: clientId)
+		} else {
+			broadcastToAllClients(object: responseObject)
+		}
+	}
+	
+	func handleVariableListResponse(data: ComputeResponse.VariableUpdate) {
+		// we send to everyone, even those not watching
+		logger.info("handling variable update with \(data.variables.count) variables")
+		let varData = SessionResponse.ListVariablesData(values: data.variables, removed: data.removed, contextId: data.environmentId, delta: data.delta)
+		logger.info("forwarding \(data.variables.count) variables")
+		broadcastToAllClients(object: SessionResponse.variables(varData))
+	}
+	
+	func handleErrorResponse(data: ComputeResponse.Error) {
+		let serror = SessionError.compute(code: data.errorCode, details: data.details, transactionId: data.transId)
+		let errorData = SessionResponse.ErrorData(transactionId: data.transId, error: serror)
+		broadcastToAllClients(object: SessionResponse.error(errorData))
+	}
+}
+
+// MARK: - command handling
+extension Session {
+	func handleOpenResponse(success: Bool, errorMessage: String?) {
+		isOpen = success
+		if !success, let err = errorMessage {
+			logger.error("Error in response to open compute connection: \(err)")
+			let errorObj = SessionResponse.error(SessionResponse.ErrorData(transactionId: nil, error: SessionError.failedToConnectToCompute))
+			broadcastToAllClients(object: errorObj)
+			do {
+				try shutdown()
+			} catch {
+				logger.error("error shutting down after failed to open compute engine: \(error)")
+			}
+			return
+		}
+		broadcastToAllClients(object: SessionResponse.computeStatus(.running))
+	}
+
+	private func handleExecute(params: SessionCommand.ExecuteParams) {
+		if params.isUserInitiated {
+			broadcastToAllClients(object: SessionResponse.echoExecute(SessionResponse.ExecuteData(transactionId: params.transactionId, source: params.source, contextId: params.contextId)))
+		}
+		do {
+			let data = try coder.executeScript(transactionId: params.transactionId, script: params.source)
+			lock.wait()
+			defer { lock.signal() }
+			try worker?.send(data: data)
+		} catch {
+			logger.info("error handling execute \(error.localizedDescription)")
+		}
+	}
+
+	private func handleExecuteFile(params: SessionCommand.ExecuteFileParams) {
+		broadcastToAllClients(object: SessionResponse.echoExecuteFile(SessionResponse.ExecuteFileData(transactionId: params.transactionId, fileId: params.fileId, fileVersion: params.fileVersion)))
+		do {
+			let data = try coder.executeFile(transactionId: params.transactionId, fileId: params.fileId, fileVersion: params.fileVersion)
+			lock.wait()
+			defer { lock.signal() }
+			try worker?.send(data: data)
+		} catch {
+			logger.warning("error handling execute file: \(error)")
+		}
+	}
+
+	private func handleFileOperation(params: SessionCommand.FileOperationParams) {
+		var cmdError: SessionError?
+		var fileId = params.fileId
+		var dupfile: Rc2Model.File? = nil
+		do {
+			switch params.operation {
+			case .remove:
+				try settings.dao.delete(fileId: params.fileId)
+			case .rename:
+				guard let name = params.newName else { throw SessionError.invalidRequest }
+				_ = try settings.dao.rename(fileId: params.fileId, version: params.fileVersion, newName: name)
+			case .duplicate:
+				guard let name = params.newName else { throw SessionError.invalidRequest }
+				dupfile = try settings.dao.duplicate(fileId: fileId, withName: name)
+				fileId = dupfile!.id
+				break
+			}
+		} catch let serror as SessionError {
+			logger.warning("file operation \(params.operation) on \(params.fileId) failed: \(serror)")
+			cmdError = serror
+		} catch {
+			logger.warning("file operation \(params.operation) on \(params.fileId) failed: \(error)")
+			cmdError = SessionError.databaseUpdateFailed
+		}
+		
+		let data = SessionResponse.FileOperationData(transactionId: params.transactionId, operation: params.operation, success: cmdError == nil, fileId: fileId, file: dupfile, error: cmdError)
+		broadcastToAllClients(object: SessionResponse.fileOperation(data))
+		sendSessionInfo(connection: nil)
+	}
+
+	private func handleClearEnvironment(id: Int) {
+		do {
+			let data = try coder.clearEnvironment(id: id)
+			try worker?.send(data: data)
+		} catch {
+			logger.warning("error clearing environment: \(error)")
+		}
+	}
+
+	private func handleHelp(topic: String, connetion: SessionConnection) {
+		do {
+			let data = try? coder.help(topic: topic)
+			try worker?.send(data: data!)
+		} catch {
+			logger.warning("error sending help message: \(error)")
+		}
+	}
+
+	private func handleGetVariable(params: SessionCommand.VariableParams, connnection: SessionConnection) {
+		do {
+			let cmd = try coder.getVariable(name: params.name, contextId: params.contextId, clientIdentifier: connnection.id)
+			try worker?.send(data: cmd)
+		} catch {
+			logger.warning("error getting variable: \(error)")
+		}
+	}
+	
+	// toggle variable watch on the compute server if it needs to be based on this request
+	private func handleWatchVariables(params: SessionCommand.WatchVariablesParams, connection: SessionConnection) {
+		guard params.watch != connection.watchingVariaables else { return } // nothing to change
+		connection.watchingVariaables = params.watch
+		// should we still be watching?
+		let shouldWatch = connections.first(where: { $0.watchingVariaables }) != nil
+		// either toggle if overall change in state, otherwise ask for updated list so socket can know all the current values
+		do {
+			var cmd = try coder.toggleVariableWatch(enable: shouldWatch, contextId: params.contextId)
+			if shouldWatch, shouldWatch == watchingVariables {
+				// ask for updated values
+				cmd = try coder.listVariables(deltaOnly: false, contextId: params.contextId)
+			}
+			try worker?.send(data: cmd)
+			watchingVariables = shouldWatch
+		} catch {
+			logger.warning("error toggling variable watch: \(error)")
+		}
+	}
+	
+	func handleFileChanged(data: SessionResponse.FileChangedData) {
+		logger.info("got file change \(data)")
+		broadcastToAllClients(object: SessionResponse.fileChanged(data))
+	}
+	
+	/// save file changes and broadcast appropriate response
+	private func handleSave(params: SessionCommand.SaveParams, connection: SessionConnection) {
+		var serror: SessionError?
+		var updatedFile: Rc2Model.File?
+		do {
+			updatedFile = try settings.dao.setFile(data: params.content, fileId: params.fileId, fileVersion: params.fileVersion)
+		} catch let dberr as Rc2DAO.DBError {
+			serror = SessionError.databaseUpdateFailed
+			if serror == .unknown {
+				logger.warning("unknown error saving file: \(dberr)")
+			}
+		} catch {
+			logger.warning("unknown error saving file: \(error)")
+			serror = SessionError.unknown
+		}
+		let responseData = SessionResponse.SaveData(transactionId: params.transactionId, success: serror != nil, file: updatedFile, error: serror)
+		broadcastToAllClients(object: SessionResponse.save(responseData))
+	}
 }
