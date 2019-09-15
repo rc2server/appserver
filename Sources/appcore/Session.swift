@@ -40,7 +40,16 @@ class Session {
 	// MARK: - basic control
 	
 	func start(k8sServer: K8sServer? = nil) throws {
-		
+		do {
+			sessionId = try settings.dao.createSessionRecord(wspaceId: workspace.id)
+			logger.info("got sessionId: \(sessionId!)")
+		} catch {
+			logger.error("failed to create session record: \(error)")
+			throw error
+		}
+		worker = ComputeWorker(wspaceId: workspace.id, sessionId: sessionId, k8sServer: k8sServer, config: settings.config, logger: logger, delegate: self, queue: .global())
+		try worker!.start()
+		try settings.dao.addFileChangeObserver(wspaceId: workspace.id, callback: handleFileChanged(data:))
 	}
 	
 	func shutdown() throws {
