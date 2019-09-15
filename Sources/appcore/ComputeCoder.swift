@@ -235,14 +235,14 @@ class ComputeCoder {
 		let startTime = Int(Date().timeIntervalSince1970).description
 		let argument: String
 		let queryId: Int
-		let clientData: [String: Int]
+		let clientData: [String: String]
 		
 		init(fileId: Int, fileVersion: Int, queryId: Int) {
 			argument = "\(fileId)"
 			self.queryId = queryId
-			var cdata = [String: Int]()
-			cdata["fileId"] = fileId
-			cdata["fileVersion"] = fileVersion
+			var cdata = [String: String]()
+			cdata["fileId"] = String(fileId)
+			cdata["fileVersion"] = String(fileVersion)
 			clientData = cdata
 		}
 	}
