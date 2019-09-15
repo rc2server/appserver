@@ -128,7 +128,7 @@ public class ComputeWorker {
 		} catch {
 			logger.error("error opening socket to compute engine: \(error)")
 			self.state = .failedToConnect
-			throw error
+			throw ComputeError.failedToConnect
 		}
 	}
 	
