@@ -30,15 +30,21 @@ public class App {
 	let router = Router(mergeParameters: false, enableWelcomePage: false)
 	let heLogger = HeliumLogger()
 	let logger = Logger(label: "rc2.app")
-	private var settings: AppSettings!
+	internal private(set) var settings: AppSettings!
 	private var dataDirURL: URL!
-	private var dao: Rc2DAO!
+	internal private(set) var dao: Rc2DAO!
 	private var listenPort = 8088
 	private var handlers: [Handlers : BaseHandler] = [:]
 	private var sessionService: SessionService!
+	private var clArgs: [String]
 	
-	public init() throws {
+	public init(_ args: [String]? = nil) throws {
 		LoggingSystem.bootstrap(heLogger.makeLogHandler)
+		if let rargs = args {
+			clArgs = rargs
+		} else {
+			clArgs = ProcessInfo.processInfo.arguments
+		}
 	}
 	
 	public func postInit() throws {
@@ -89,7 +95,7 @@ public class App {
 	}
 	
 	func parseCommandLine() {
-		let cli = CommandLine()
+		let cli = CommandLine(arguments: clArgs)
 		let dataDir = StringOption(shortFlag: "D", longFlag: "datadir", helpMessage: "Specify path to directory with data files")
 		cli.addOption(dataDir)
 		let portOption = IntOption(shortFlag: "p", helpMessage: "Port to listen to (defaults to 8088)")
