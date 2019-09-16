@@ -278,8 +278,13 @@ final class Rc2DAOTests: XCTestCase {
 	/// - Returns: a string containg STDOUT
 	/// - Throws: if docker command fails
 	func runDocker(arguments: [String]) throws -> String {
+		#if os(Linux)
+			let defaultDockerPath = "/usr/bin/docker"
+		#else
+			let defaulDockerPath = "/usr/local/bin/docker"
+		#endif
 		if nil == dockerURL {
-			let envPath = ProcessInfo.processInfo.environment["DOCKER_EXE"] ?? "/usr/local/bin/docker"
+			let envPath = ProcessInfo.processInfo.environment["DOCKER_EXE"] ?? defaultDockerPath
 			dockerURL = URL(fileURLWithPath: envPath)
 		}
 		let proc = Process()
@@ -287,15 +292,17 @@ final class Rc2DAOTests: XCTestCase {
 		proc.arguments = arguments
 		let outPipe = Pipe()
 		proc.standardOutput = outPipe
-		
 		do {
 			try proc.run()
 			proc.waitUntilExit()
-			guard proc.terminationStatus == 0 else { throw Rc2TestErrors.noneZeroExitStatus }
+			guard proc.terminationStatus == 0 else { 
+				logger.error("docker exec returned \(proc.terminationStatus)")
+				throw Rc2TestErrors.noneZeroExitStatus 
+			}
 			let outputData = outPipe.fileHandleForReading.readDataToEndOfFile()
 			return String(decoding: outputData, as: UTF8.self)
 		} catch {
-			logger.critical("error trying to exec docker \(arguments.joined(separator: " "))")
+			logger.critical("error '\(error)' trying to exec docker \(arguments.joined(separator: " "))")
 			throw Rc2TestErrors.dockerCommandFailed
 		}
 	}
