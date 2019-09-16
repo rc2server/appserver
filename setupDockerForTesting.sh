@@ -18,7 +18,7 @@ docker exec appserver_test psql -U postgres -c "create database rc2;"
 docker exec appserver_test psql -U postgres -c "create user rc2 superuser password 'secret';"
 docker exec appserver_test psql -U postgres -c "grant all privileges on database rc2 to rc2;"
 docker cp "${SQLFILE}" appserver_test:/tmp/rc2.sql
-docker exec appserver_test psql -U postgres --file=/tmp/rc2.sql
+docker exec appserver_test psql -U postgres -d rc2 --file=/tmp/rc2.sql
 
 sleep 1;
 echo "server ready"
