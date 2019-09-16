@@ -13,8 +13,6 @@ import SwiftJWT
 
 public class AppSettings: BodyEncoder, BodyDecoder {
 	let logger = Logger(label: "AppSettings")
-	/// settings for this application
-	private var settings: AppSettings!
 	/// URL for a directory that contains resources used by the application.
 	public let dataDirURL: URL
 	/// The data access object for retrieving objects from the database.
@@ -25,8 +23,8 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 	private let encoder: JSONEncoder
 	/// the decoder used, implementation detail.
 	private let decoder: JSONDecoder
-	private let jwtSigner:  JWTSigner
-	private let jwtVerifier: JWTVerifier
+	let jwtSigner:  JWTSigner
+	let jwtVerifier: JWTVerifier
 
 	/// Create a JSONEncoder with the configuration used by the app
 	///
@@ -64,10 +62,6 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		decoder = AppSettings.createJSONDecoder()
 		encoder = AppSettings.createJSONEncoder()
 		
-		let secretData = settings.config.jwtHmacSecret.data(using: .utf8, allowLossyConversion: true)!
-		jwtSigner = JWTSigner.hs512(key: secretData)
-		jwtVerifier = JWTVerifier.hs512(key: secretData)
-
 		var configUrl: URL!
 		do {
 			configUrl = dataDirURL.appendingPathComponent("config.json")
@@ -76,6 +70,10 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		} catch {
 			fatalError("failed to load config file \(configUrl.absoluteString) \(error)")
 		}
+
+		let secretData = config.jwtHmacSecret.data(using: .utf8, allowLossyConversion: true)!
+		jwtSigner = JWTSigner.hs512(key: secretData)
+		jwtVerifier = JWTVerifier.hs512(key: secretData)
 	}
 	
 	/// Parses an Authorization header (Bearer <token>) and extracts the LoginToken with userId
