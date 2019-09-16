@@ -15,6 +15,7 @@ import servermodel
 @testable import appcore
 
 class BaseTest: XCTestCase {
+	static let logger = Logger(label: "rc2appserver unit test")
 	static let testPort = 8888
 	static let app: App? = try? App(["-p", "8888"])
 	static var authHeader: String!
@@ -33,9 +34,8 @@ class BaseTest: XCTestCase {
 			let token = try app.dao.tokenDAO.createToken(user: user!)
 			var jwt = JWT(claims: token)
 			let signedJwt = try jwt.sign(using: app.settings.jwtSigner)
-			authHeader = "Bearer \(signedJwt)"
 		} catch {
-			XCTFail("failed to create server")
+			XCTFail("failed to create server: \(error)")
 		}
 	}()
 	
