@@ -281,7 +281,7 @@ final class Rc2DAOTests: XCTestCase {
 		#if os(Linux)
 			let defaultDockerPath = "/usr/bin/docker"
 		#else
-			let defaulDockerPath = "/usr/local/bin/docker"
+			let defaultDockerPath = "/usr/local/bin/docker"
 		#endif
 		if nil == dockerURL {
 			let envPath = ProcessInfo.processInfo.environment["DOCKER_EXE"] ?? defaultDockerPath
