@@ -15,7 +15,7 @@ import KituraNet
 final class PathTests: BaseTest {
 	func testInfoRoute() throws {
 		let expect = self.expectation(description: "get info")
-		let headers: [String : String] = [HTTPHeaders.authorization: PathTests.authHeader]
+		let headers: [String : String] = [HTTPHeaders.authorization: BaseTest.authHeader]
 		performRequest("get", path: "/info", expectation: expect, headers: headers) { response in
 			XCTAssertEqual(response.statusCode, HTTPStatusCode.OK, "request failed")
 			var data = Data()

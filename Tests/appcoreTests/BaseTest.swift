@@ -35,6 +35,7 @@ class BaseTest: XCTestCase {
 			let token = try app.dao.tokenDAO.createToken(user: user!)
 			var jwt = JWT(claims: token)
 			let signedJwt = try jwt.sign(using: app.settings.jwtSigner)
+			BaseTest.authHeader = "Bearer \(signedJwt)"
 		} catch {
 			XCTFail("failed to create server: \(error)")
 		}
