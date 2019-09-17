@@ -12,6 +12,7 @@ import KituraNet
 import SwiftJWT
 import Rc2Model
 import servermodel
+import Logging
 @testable import appcore
 
 class BaseTest: XCTestCase {
