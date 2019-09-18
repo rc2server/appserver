@@ -74,10 +74,13 @@ class SessionService: WebSocketService, Hashable {
 	// MARK: - WebSocketService implementation
 	
 	func connected(connection: WebSocketConnection) {
+		logger.info("sessionSerivce connected")
 		// make sure they have a valid auth token, extract thte user from it, and make sure they own the workspace
 		let url = connection.request.urlURL
-		let idStr = url.lastPathComponent
-		guard let wspaceId = Int(idStr),
+
+//		let idStr = url.lastPathComponent
+		guard let wsStr = connection.request.headers[HTTPHeaders.wspaceId]?.first,
+				let wspaceId = Int(wsStr),
 			let token = settings.loginToken(from: connection.request.headers[HTTPHeaders.authorization]?.first),
 			let wspace = try? settings.dao.getWorkspace(id: wspaceId),
 			let fuser = try? settings.dao.getUser(id: token.userId),
@@ -111,6 +114,8 @@ class SessionService: WebSocketService, Hashable {
 			}
 		}
 		let ssocket = SessionConnection(connection: connection, user: fuser, settings: settings, logger: logger)
+		connections[connection.id] = ssocket
+		connectionToSession[connection.id] = wspaceId
 		session?.added(connection: ssocket)
 	}
 	

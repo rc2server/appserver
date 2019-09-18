@@ -114,6 +114,7 @@ class AuthHandler: BaseHandler {
 public struct HTTPHeaders {
 	/// Authorization header
 	public static let authorization = "Authorization"
+	public static let wspaceId = "Rc2-WorkspaceId"
 
 	/// Extract an auth token from a RouterRequest
 	///

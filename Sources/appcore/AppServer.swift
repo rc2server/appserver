@@ -80,6 +80,7 @@ public class App {
 		// websocket
 		sessionService = SessionService(settings: settings, logger: logger)
 		WebSocket.register(service:sessionService,  onPath: "\(settings.config.urlPrefixToIgnore)/ws/:wsId")
+		WebSocket.register(service:sessionService,  onPath: "\(settings.config.urlPrefixToIgnore)/ws")
 	}
 	
 	public func run() throws {
