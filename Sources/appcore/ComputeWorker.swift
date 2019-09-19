@@ -148,6 +148,7 @@ public class ComputeWorker {
 		header.initialize(repeating: 0, count: 8)
 		do {
 			let readCount = try socket.read(into: header, bufSize: 8, truncate: true)
+			if readCount == 0 { return }
 			guard readCount == 8 else {
 				logger.error("failed to read magic header: \(readCount)")
 				return
