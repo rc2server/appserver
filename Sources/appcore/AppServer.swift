@@ -33,7 +33,7 @@ public class App {
 	internal private(set) var settings: AppSettings!
 	private var dataDirURL: URL!
 	internal private(set) var dao: Rc2DAO!
-	private var listenPort = 8088
+	private var listenPort = 3145
 	private var handlers: [Handlers : BaseHandler] = [:]
 	private var sessionService: SessionService!
 	private var clArgs: [String]

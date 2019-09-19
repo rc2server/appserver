@@ -68,7 +68,6 @@ class ComputeCoderTests: XCTestCase {
 	
 	func testExecuteScript() {
 		let encoder = AppSettings.createJSONEncoder()
-		let data = try! coder.executeScript(transactionId: "dfds", script: "2*2")
 		let params = SessionCommand.ExecuteParams(sourceCode: "2*2", contextId: 101)
 		let cmd = SessionCommand.execute(params)
 		let	ser = try! encoder.encode(cmd)
