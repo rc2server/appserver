@@ -228,7 +228,9 @@ extension Session: ComputeWorkerDelegate {
 			// send open connection message
 			do {
 				logger.debug("connecting to compute with '\(settings.config.dbPassword)'")
-				let message = try coder.openConnection(wspaceId: workspace.id, sessionId: sessionId!, dbhost: settings.config.computeDbHost, dbuser: settings.config.dbUser, dbname: settings.config.dbName, dbpassword: settings.config.dbPassword)
+				let message = try coder.openConnection(wspaceId: workspace.id, sessionId: sessionId!, dbhost: settings.config.computeDbHost, dbPort: settings.config.computeDbPort,
+					dbuser: settings.config.dbUser, dbname: settings.config.dbName,
+					dbpassword: settings.config.dbPassword)
 				try worker!.send(data: message)
 			} catch {
 				logger.error("failed to send open connection message: \(error)")

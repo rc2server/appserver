@@ -119,7 +119,10 @@ public class ComputeWorker {
 		do {
 			self.state = .connecting
 			socket = try Socket.create()
-			try socket?.connect(to: config.computeHost, port: Int32(config.computePort))
+			socket?.readBufferSize = 32768 // 32 KB
+			let port = Int32(config.computePort) //kitura uses Int32 for legacy purposes
+			logger.info("compute connectding to \(config.computeHost):\(port)")
+			try socket?.connect(to: config.computeHost, port: port)
 			logger.info("compute worker socket open")
 			self.state = .connected
 			readQueue.async { [weak self] in
