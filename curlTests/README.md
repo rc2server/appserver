@@ -14,7 +14,7 @@ That will then make the login.json correct.
 
 adjust the path if running from inside curlTests directory. 
 
-`url -v -X POST -H "Content-Type: application/json" -d @curlTests/login.json http://localhost:8088/login`
+`curl -v -X POST -H "Content-Type: application/json" -d @curlTests/login.json http://localhost:8088/login`
 
 That will return a JWT string you need to add to the authorization header on every request:
 
