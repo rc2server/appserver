@@ -14,7 +14,7 @@ import Kitura
 import KituraWebSocket
 
 class Session {
-	let logger: Logger
+	var logger: Logger
 	let workspace: Workspace
 	let settings: AppSettings
 	private let lock = DispatchSemaphore(value: 1)
@@ -42,6 +42,7 @@ class Session {
 	func start(k8sServer: K8sServer? = nil) throws {
 		do {
 			sessionId = try settings.dao.createSessionRecord(wspaceId: workspace.id)
+			logger[metadataKey: "sessionId"] = "\(sessionId!)"
 			logger.info("got sessionId: \(sessionId!)")
 		} catch {
 			logger.error("failed to create session record: \(error)")
@@ -181,6 +182,7 @@ extension Session: Hashable {
 extension Session: ComputeWorkerDelegate {
 	func handleCompute(data: Data) {
 		do {
+			logger.debug("handling: \(String(data: data, encoding: .utf8)!)")
 			let response = try coder.parseResponse(data: data)
 			switch response {
 			case .open(let openData):
@@ -211,6 +213,16 @@ extension Session: ComputeWorkerDelegate {
 		let serr = SessionError.compute(code: .unknown, details: error.localizedDescription, transactionId: nil)
 		let edata = SessionResponse.ErrorData(transactionId: nil, error: serr)
 		broadcastToAllClients(object: SessionResponse.error(edata))
+	}
+	
+	func handleConnectionClosed() {
+		let error = SessionResponse.error(SessionResponse.ErrorData(transactionId: nil, error: SessionError.computeConnectionClosed))
+		broadcastToAllClients(object: error)
+		DispatchQueue.global().async {
+			do {
+				try self.shutdown()
+			} catch {}
+		}
 	}
 	
 	func handleCompute(statusUpdate: ComputeState) {

@@ -16,6 +16,8 @@ public protocol ComputeWorkerDelegate: class {
 	func handleCompute(error: ComputeError)
 	/// status updates just inform about a state change. If something failed, an error will be reported after the state change
 	func handleCompute(statusUpdate: ComputeState)
+	/// called when the connection is found to be closed while reading
+	func handleConnectionClosed()
 }
 
 /// used for a state machine of the connection status
