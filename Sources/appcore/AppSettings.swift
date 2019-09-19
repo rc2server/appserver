@@ -136,6 +136,8 @@ public struct AppConfiguration: Decodable {
 	public let computeTimeout: Double
 	/// The db host name to send to the compute server (which because of dns can be different)
 	public let computeDbHost: String
+	/// The db port to send to the compute server. Is a string because that's how compute engine works with it. Defaults to 5432
+	public let computeDbPort: String
 	/// The size of the read buffer for messages from the compute engine. Must be between 512 KB and 20 MB. Defaults to 1 MB. should be larger than maximumWebSocketFileSizeKB
 	public let computeReadBufferSize: Int
 	/// The largest amount of file data to return over the websocket. Anything higher should be fetched via REST. In KB. Defaults to 600.
@@ -169,6 +171,7 @@ public struct AppConfiguration: Decodable {
 		case computePort
 		case computeTimeout
 		case computeDbHost
+		case computeDbPort
 		case maximumWebSocketFileSizeKB
 		case jwtHmacSecret
 		case computeReadBufferSize
@@ -201,6 +204,7 @@ public struct AppConfiguration: Decodable {
 		computeViaK8s = try container.decodeIfPresent(Bool.self, forKey: .computeViaK8s) ?? false
 		k8sStencilPath = try container.decodeIfPresent(String.self, forKey: .k8sStencilPath) ?? "/rc2/k8s-templates"
 		computeImage = try container.decodeIfPresent(String.self, forKey: .computeImage) ?? "docker.rc2.io/compute:latest"
+		computeDbPort = try container.decodeIfPresent(String.self, forKey: .computeDbPort) ?? "5432"
 		let cdb = try container.decodeIfPresent(String.self, forKey: .computeDbHost)
 		computeDbHost = cdb == nil ? dbHost : cdb!
 		computeStartupDelay = try container.decodeIfPresent(Int.self, forKey: .computeStartupDelay) ?? 2000

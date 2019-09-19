@@ -107,12 +107,13 @@ class ComputeCoder {
 	/// - Parameter wspaceId: id of the workspace to use
 	/// - Parameter sessionid: id of the session record to use for this session
 	/// - Parameter dbhost: The hostname for the database server
+	/// - Parameter dbport: The port for the database server. String is format compute server requires.
 	/// - Parameter dbuser: The username to log into the database with
 	/// - Parameter dbname: The name of the database to connect to
 	/// - Parameter dbpassword: The password the compute server uses for the database
 	/// - Returns: data to send to compute server
-	func openConnection(wspaceId: Int, sessionId: Int, dbhost: String, dbuser: String, dbname: String, dbpassword: String?) throws -> Data {
-		let msg = OpenCommand(wspaceId: wspaceId, sessionRecId: sessionId, dbhost: dbhost, dbuser: dbuser, dbname: dbname, dbpassword: dbpassword)
+	func openConnection(wspaceId: Int, sessionId: Int, dbhost: String, dbPort: String = "5432", dbuser: String, dbname: String, dbpassword: String?) throws -> Data {
+		let msg = OpenCommand(wspaceId: wspaceId, sessionRecId: sessionId, dbhost: dbhost, dbport: dbPort, dbuser: dbuser, dbname: dbname, dbpassword: dbpassword)
 		return try encoder.encode(msg)
 	}
 	
@@ -142,7 +143,7 @@ class ComputeCoder {
 		} catch let error where error is ComputeError {
 			throw error
 		} catch {
-			logger.warning("parseResponse threw error \(error)")
+			logger.warning("parseResponse threw error \(error);json=\(String(data: data, encoding: .utf8) ?? "")")
 			throw error
 		}
 	}
@@ -172,6 +173,7 @@ class ComputeCoder {
 		let sessionRecId: Int
 		let apiVersion: Int = 1
 		let dbhost: String
+		let dbport: String
 		let dbuser: String
 		let dbname: String
 		let dbpassword: String?

@@ -16,6 +16,8 @@ public protocol ComputeWorkerDelegate: class {
 	func handleCompute(error: ComputeError)
 	/// status updates just inform about a state change. If something failed, an error will be reported after the state change
 	func handleCompute(statusUpdate: ComputeState)
+	/// called when the connection is found to be closed while reading
+	func handleConnectionClosed()
 }
 
 /// used for a state machine of the connection status
@@ -40,6 +42,7 @@ public class ComputeWorker {
 	private var readBuffer: UnsafeMutablePointer<CChar>
 	private var readBufferSize: Int
 	private let readQueue: DispatchQueue
+	private let lock = DispatchSemaphore(value: 1)
 	
 	private weak var delegate: ComputeWorkerDelegate?
 	private(set) var state: ComputeState = .uninitialized {
@@ -119,7 +122,10 @@ public class ComputeWorker {
 		do {
 			self.state = .connecting
 			socket = try Socket.create()
-			try socket?.connect(to: config.computeHost, port: Int32(config.computePort))
+			socket?.readBufferSize = 32768 // 32 KB
+			let port = Int32(config.computePort) //kitura uses Int32 for legacy purposes
+			logger.info("compute connectding to \(config.computeHost):\(port)")
+			try socket?.connect(to: config.computeHost, port: port)
 			logger.info("compute worker socket open")
 			self.state = .connected
 			readQueue.async { [weak self] in
@@ -137,7 +143,17 @@ public class ComputeWorker {
 	}
 	
 	private func readNext() {
-		guard let socket = socket, socket.isActive else { fatalError("no open socket to read") }
+		guard let socket = socket else {
+			logger.warning("no open socket to read")
+			return
+		}
+		guard socket.isActive else {
+			logger.info("tried to read closed connection")
+			delegate?.handleConnectionClosed()
+			return
+		}
+		lock.wait()
+		defer { lock.signal() }
 		// in any other case, we'll want to read again
 		defer { readQueue.async { [weak self] in self?.readNext() } }
 		var header = UnsafeMutablePointer<CChar>.allocate(capacity: 8)
@@ -145,6 +161,7 @@ public class ComputeWorker {
 		header.initialize(repeating: 0, count: 8)
 		do {
 			let readCount = try socket.read(into: header, bufSize: 8, truncate: true)
+			if readCount == 0 { return }
 			guard readCount == 8 else {
 				logger.error("failed to read magic header: \(readCount)")
 				return
@@ -160,12 +177,12 @@ public class ComputeWorker {
 			// pass along a Data w/o copying the memory
 			let rawPtr = UnsafeMutableRawPointer(readBuffer)
 			let tmpData = Data(bytesNoCopy: rawPtr, count: sizeRead, deallocator: .none)
-			DispatchQueue.global().async {
+			readQueue.sync {
 				self.delegate?.handleCompute(data: tmpData)
 			}
 		} catch {
 			logger.error("error reading from compute socket: \(error)")
-			DispatchQueue.global().async {
+			readQueue.async {
 				self.delegate?.handleCompute(error: .failedToReadMessage)
 			}
 		}

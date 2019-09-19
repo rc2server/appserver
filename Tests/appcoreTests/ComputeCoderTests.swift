@@ -67,12 +67,26 @@ class ComputeCoderTests: XCTestCase {
 	}
 	
 	func testExecuteScript() {
-		let tid = "foo1"
-		let script = "rnorm(20)"
-		let data = try! coder.executeScript(transactionId: tid, script: script)
-		let json = try! decoder.decode(JsonResponse.self, from: data)
-		XCTAssertEqual(json.msg, "execScript")
-		XCTAssertEqual(json.argument, script)
+		let encoder = AppSettings.createJSONEncoder()
+		let data = try! coder.executeScript(transactionId: "dfds", script: "2*2")
+		let params = SessionCommand.ExecuteParams(sourceCode: "2*2", contextId: 101)
+		let cmd = SessionCommand.execute(params)
+		let	ser = try! encoder.encode(cmd)
+		let dser = try! decoder.decode(SessionCommand.self, from: ser)
+		XCTAssertNotNil(dser)
+
+//		let tid = "foo1"
+//		let script = "rnorm(20)"
+//		let data = try! coder.executeScript(transactionId: tid, script: script)
+//		print("json=\(String(data: data, encoding: .utf8)!)")
+//		let mds =
+//		"""
+//		{"msg": "execScript", "argument": "2*2", "queryId": 123, "startTime": "343" }
+//		"""
+//		let md = mds.data(using: .utf8)!
+//		let json = try! decoder.decode(SessionCommand.self, from: md)
+//		XCTAssertEqual(json.msg, "execScript")
+//		XCTAssertEqual(json.argument, script)
 	}
 	
 	func testExecuteFile() {

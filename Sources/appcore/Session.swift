@@ -14,7 +14,7 @@ import Kitura
 import KituraWebSocket
 
 class Session {
-	let logger: Logger
+	var logger: Logger
 	let workspace: Workspace
 	let settings: AppSettings
 	private let lock = DispatchSemaphore(value: 1)
@@ -42,6 +42,7 @@ class Session {
 	func start(k8sServer: K8sServer? = nil) throws {
 		do {
 			sessionId = try settings.dao.createSessionRecord(wspaceId: workspace.id)
+			logger[metadataKey: "sessionId"] = "\(sessionId!)"
 			logger.info("got sessionId: \(sessionId!)")
 		} catch {
 			logger.error("failed to create session record: \(error)")
@@ -181,6 +182,7 @@ extension Session: Hashable {
 extension Session: ComputeWorkerDelegate {
 	func handleCompute(data: Data) {
 		do {
+			logger.debug("handling: \(String(data: data, encoding: .utf8)!)")
 			let response = try coder.parseResponse(data: data)
 			switch response {
 			case .open(let openData):
@@ -213,6 +215,16 @@ extension Session: ComputeWorkerDelegate {
 		broadcastToAllClients(object: SessionResponse.error(edata))
 	}
 	
+	func handleConnectionClosed() {
+		let error = SessionResponse.error(SessionResponse.ErrorData(transactionId: nil, error: SessionError.computeConnectionClosed))
+		broadcastToAllClients(object: error)
+		DispatchQueue.global().async {
+			do {
+				try self.shutdown()
+			} catch {}
+		}
+	}
+	
 	func handleCompute(statusUpdate: ComputeState) {
 		var clientUpdate: SessionResponse.ComputeStatus?
 		switch statusUpdate {
@@ -228,7 +240,9 @@ extension Session: ComputeWorkerDelegate {
 			// send open connection message
 			do {
 				logger.debug("connecting to compute with '\(settings.config.dbPassword)'")
-				let message = try coder.openConnection(wspaceId: workspace.id, sessionId: sessionId!, dbhost: settings.config.computeDbHost, dbuser: settings.config.dbUser, dbname: settings.config.dbName, dbpassword: settings.config.dbPassword)
+				let message = try coder.openConnection(wspaceId: workspace.id, sessionId: sessionId!, dbhost: settings.config.computeDbHost, dbPort: settings.config.computeDbPort,
+					dbuser: settings.config.dbUser, dbname: settings.config.dbName,
+					dbpassword: settings.config.dbPassword)
 				try worker!.send(data: message)
 			} catch {
 				logger.error("failed to send open connection message: \(error)")

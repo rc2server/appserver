@@ -137,6 +137,7 @@ class SessionService: WebSocketService, Hashable {
 	}
 	
 	func received(message: Data, from: WebSocketConnection) {
+		guard message.count > 1 else { return } // json needs {} at minimum, 1 char meesage likely newline
 		guard let sconnection = connections[from.id],
 			let session = session(for: from) else {
 			logger.warning("failed to get session for source of message")
