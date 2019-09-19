@@ -42,6 +42,7 @@ public class ComputeWorker {
 	private var readBuffer: UnsafeMutablePointer<CChar>
 	private var readBufferSize: Int
 	private let readQueue: DispatchQueue
+	private let lock = DispatchSemaphore(value: 1)
 	
 	private weak var delegate: ComputeWorkerDelegate?
 	private(set) var state: ComputeState = .uninitialized {
@@ -142,7 +143,17 @@ public class ComputeWorker {
 	}
 	
 	private func readNext() {
-		guard let socket = socket, socket.isActive else { fatalError("no open socket to read") }
+		guard let socket = socket else {
+			logger.warning("no open socket to read")
+			return
+		}
+		guard socket.isActive else {
+			logger.info("tried to read closed connection")
+			delegate?.handleConnectionClosed()
+			return
+		}
+		lock.wait()
+		defer { lock.signal() }
 		// in any other case, we'll want to read again
 		defer { readQueue.async { [weak self] in self?.readNext() } }
 		var header = UnsafeMutablePointer<CChar>.allocate(capacity: 8)
@@ -166,12 +177,12 @@ public class ComputeWorker {
 			// pass along a Data w/o copying the memory
 			let rawPtr = UnsafeMutableRawPointer(readBuffer)
 			let tmpData = Data(bytesNoCopy: rawPtr, count: sizeRead, deallocator: .none)
-			DispatchQueue.global().async {
+			readQueue.sync {
 				self.delegate?.handleCompute(data: tmpData)
 			}
 		} catch {
 			logger.error("error reading from compute socket: \(error)")
-			DispatchQueue.global().async {
+			readQueue.async {
 				self.delegate?.handleCompute(error: .failedToReadMessage)
 			}
 		}
