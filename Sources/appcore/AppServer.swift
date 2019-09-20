@@ -33,7 +33,7 @@ public class App {
 	internal private(set) var settings: AppSettings!
 	private var dataDirURL: URL!
 	internal private(set) var dao: Rc2DAO!
-	private var listenPort = 3145
+	private var listenPort = 8088
 	private var handlers: [Handlers : BaseHandler] = [:]
 	private var sessionService: SessionService!
 	private var clArgs: [String]
@@ -46,18 +46,39 @@ public class App {
 			clArgs = ProcessInfo.processInfo.arguments
 		}
 	}
-	
+
+	private func connectToDB() -> Bool {
+		do {
+			logger.info("connecting to db @\(settings.config.dbHost):\(settings.config.dbPort)")
+			let connection = Connection(host: settings.config.dbHost, port: "\(settings.config.dbPort)", user: settings.config.dbUser, password: settings.config.dbPassword, dbname: settings.config.dbName, sslMode: .prefer)
+			try connection.open()
+			dao = Rc2DAO(connection: connection)
+			settings.setDAO(newDao: dao)
+			return true
+		} catch {
+			logger.info("db connection failed: \(error)")
+			return false
+		}
+	}
+
 	public func postInit() throws {
 		parseCommandLine()
+		logger.info("parsed cmd line")
 		settings = AppSettings(dataDirURL: dataDirURL)
 		// customize the json (d)encoders used
 		router.encoders[.json] = { AppSettings.createJSONEncoder() }
 		router.decoders[.json] = { AppSettings.createJSONDecoder() }
 		// connect to database
-		let connection = Connection(host: settings.config.dbHost, port: "\(settings.config.dbPort)", user: settings.config.dbUser, password: settings.config.dbPassword, dbname: settings.config.dbName, sslMode: .prefer)
-		try connection.open()
-		dao = Rc2DAO(connection: connection)
-		settings.setDAO(newDao: dao)
+		logger.info("connecting to db")
+		for i in 0..<settings.config.dbConnectAttemptCount {
+			print("attempting connection \(i)")
+			if connectToDB() {
+				logger.info("connection opened")
+				break
+			}
+			sleep(UInt32(settings.config.dbConnectAttemptDelay))
+		}
+		guard dao != nil else { fatalError("failed to connect to db ") }
 		// auth middleware
 		let mware = AuthMiddleware(settings: settings)
 		router.all(middleware: [mware])
@@ -87,9 +108,7 @@ public class App {
 		do {
 			try postInit()
 			Kitura.addHTTPServer(onPort: listenPort, with: router)
-			logger.info("listening on \(listenPort)")
 			Kitura.run(exitOnFailure: false)
-			print("finished running")
 		} catch {
 			fatalError("error running: \(error)")
 		}

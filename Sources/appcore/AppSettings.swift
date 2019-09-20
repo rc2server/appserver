@@ -128,6 +128,10 @@ public struct AppConfiguration: Decodable {
 	public let dbName: String
 	/// The password to connect to the database. Defaults to "rc2".
 	public let dbPassword: String
+	/// the number of times to try to connect before failing. Defaults to 3
+	public let dbConnectAttemptCount: Int
+	/// the number of seconds to wait between connection attempts. Defaults to 4
+	public let dbConnectAttemptDelay: Int
 	/// The host name of the compute engine. Defaults to "compute".
 	public let computeHost: String
 	/// The port of the compute engine. Defaults to 7714.
@@ -167,6 +171,8 @@ public struct AppConfiguration: Decodable {
 		case dbUser
 		case dbName
 		case dbPassword
+		case dbConnectAttemptCount
+		case dbConnectAttemptDelay
 		case computeHost
 		case computePort
 		case computeTimeout
@@ -195,7 +201,9 @@ public struct AppConfiguration: Decodable {
 		dbUser = try container.decodeIfPresent(String.self, forKey: .dbUser) ?? "rc2"
 		dbName = try container.decodeIfPresent(String.self, forKey: .dbName) ?? "rc2"
 		dbPassword = try container.decodeIfPresent(String.self, forKey: .dbPassword) ?? "rc2"
-		dbPort = try container.decodeIfPresent(UInt16.self, forKey: .dbPort) ?? 8432
+		dbPort = try container.decodeIfPresent(UInt16.self, forKey: .dbPort) ?? 5432
+		dbConnectAttemptCount = try container.decodeIfPresent(Int.self, forKey: .dbConnectAttemptCount) ?? 3
+		dbConnectAttemptDelay = try container.decodeIfPresent(Int.self, forKey: .dbConnectAttemptDelay) ?? 4
 		computeHost = try container.decodeIfPresent(String.self, forKey: .computeHost) ?? "compute"
 		computePort = try container.decodeIfPresent(UInt16.self, forKey: .computePort) ?? 7714
 		computeTimeout = try container.decodeIfPresent(Double.self, forKey: .computeTimeout) ?? 4.0
