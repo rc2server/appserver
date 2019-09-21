@@ -48,8 +48,9 @@ class AuthHandler: BaseHandler {
 			guard let user = try settings.dao.getUser(login: params.login, password: params.password)
 			else {
 				logger.info("invalid login for \(params.login)")
+				let err = try! settings.encode(SessionError.invalidRequest)
 				response.status(.unauthorized)
-				try response.send("invalid login or password").end()
+				try response.send(err).end()
 				return
 			}
 			let token = try tokenDao.createToken(user: user)
