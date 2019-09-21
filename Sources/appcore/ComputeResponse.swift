@@ -152,7 +152,7 @@ public enum ComputeResponse: Equatable {
 	/// response when an error occured
 	public struct Error: Codable, Equatable {
 		/// the error code
-		let errorCode: SessionErrorCode
+		let error: SessionError
 		/// details of the error, for logging not display to user
 		let details: String
 		/// queryId if one accompanied the request
@@ -161,14 +161,14 @@ public enum ComputeResponse: Equatable {
 		let transId: String?
 		
 		enum CodingKeys: String, CodingKey {
-			case errorCode
+			case error
 			case details = "errorDetails"
 			case queryId
 			case transId
 		}
 		
 		func withTransactionId(_ transId: String) -> Error {
-			return Error(errorCode: errorCode, details: details, queryId: queryId, transId: transId)
+			return Error(error: error, details: details, queryId: queryId, transId: transId)
 		}
 	}
 

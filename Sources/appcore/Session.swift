@@ -210,8 +210,8 @@ extension Session: ComputeWorkerDelegate {
 	func handleCompute(error: ComputeError) {
 		logger.warning("error from compute: \(error)")
 		// TODO: better handling of the error, like reconnecting
-		let serr = SessionError.compute(code: .unknown, details: error.localizedDescription, transactionId: nil)
-		let edata = SessionResponse.ErrorData(transactionId: nil, error: serr)
+		let serr = DetailedError(error: SessionError.compute, details:  error.localizedDescription)
+		let edata = SessionResponse.ErrorData(transactionId: nil, error: serr.error, details: serr.details)
 		broadcastToAllClients(object: SessionResponse.error(edata))
 	}
 	
@@ -296,7 +296,7 @@ extension Session {
 			//if file is too large, only send meta info
 			guard let file = try settings.dao.getFile(id: data.fileId, userId: workspace.userId) else {
 				logger.warning("failed to find file \(data.fileId) to show output")
-				handleErrorResponse(data: ComputeResponse.Error(errorCode: .unknownFile, details: "unknown file requested", queryId: data.queryId, transId: transId))
+				handleErrorResponse(data: ComputeResponse.Error(error: .fileNotFound, details: "unknown file requested", queryId: data.queryId, transId: transId))
 				return
 			}
 			var fileData: Data? = nil
@@ -356,7 +356,7 @@ extension Session {
 	}
 	
 	func handleErrorResponse(data: ComputeResponse.Error) {
-		let serror = SessionError.compute(code: data.errorCode, details: data.details, transactionId: data.transId)
+		let serror = SessionError.compute
 		let errorData = SessionResponse.ErrorData(transactionId: data.transId, error: serror)
 		broadcastToAllClients(object: SessionResponse.error(errorData))
 	}
