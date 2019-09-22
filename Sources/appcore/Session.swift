@@ -275,7 +275,7 @@ extension Session {
 			aPath = aPath.replacingOccurrences(of: "/help/", with: "/html/")
 			aPath.append(".html") // add file extension
 			// split components
-			var components = value.split(separator: "/")
+			let components = value.split(separator: "/")
 			let funName = components.last!
 			let pkgName = components.count > 3 ? components[components.count - 3] : "Base"
 			let title = String(funName + " (" + pkgName + ")")
