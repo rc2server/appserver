@@ -25,6 +25,7 @@ class Session {
 	let coder: ComputeCoder
 	private var isOpen = false
 	private var watchingVariables = false
+	private var closeHandled = false
 
 	init(workspace: Workspace, settings: AppSettings) {
 		self.workspace = workspace
@@ -59,6 +60,9 @@ class Session {
 		}
 		lock.wait()
 		defer { lock.signal() }
+		if !closeHandled {
+			broadcastToAllClients(object: SessionResponse.closed(SessionResponse.CloseData(reason: .computeClosed, details: nil)))
+		}
 		do {
 			try worker?.send(data: try coder.close())
 		} catch {
@@ -125,7 +129,12 @@ class Session {
 	/// - Parameter object: the message to send
 	func broadcastToAllClients<T: Encodable>(object: T) {
 		do {
-			lock.wait()
+			let wstatus = lock.wait(timeout: .now() + .milliseconds(50))
+			if wstatus == .timedOut {
+				// most likely already locked, so we'll do nothing
+				logger.warning("skipping broadcast b/c lock busy")
+				return
+			}
 			defer { lock.signal() }
 			let data = try settings.encode(object)
 			connections.forEach {
@@ -216,16 +225,28 @@ extension Session: ComputeWorkerDelegate {
 	}
 	
 	func handleConnectionClosed() {
-		let error = SessionResponse.error(SessionResponse.ErrorData(transactionId: nil, error: SessionError.computeConnectionClosed))
-		broadcastToAllClients(object: error)
-		DispatchQueue.global().async {
-			do {
-				try self.shutdown()
-			} catch {}
+		guard !closeHandled else {
+			logger.warning("duplicate call")
+			return
 		}
+		let wresult = lock.wait(timeout: .now() + .milliseconds(1))
+		guard wresult == .success else {
+			// failed to acquire lock
+			logger.warning("failed to acquire lock to set closeHandled=true")
+			return
+		}
+		closeHandled = true
+		lock.signal()
+		let details = SessionResponse.closed(SessionResponse.CloseData(reason: .computeClosed))
+		broadcastToAllClients(object: details)
 	}
 	
 	func handleCompute(statusUpdate: ComputeState) {
+		guard !closeHandled else {
+			logger.warning("why are ew getting a statusUpdate after closed?")
+			return
+		} //theoretically server should never send an error after closed, but just in case
+		// TODO: do we need to track the current status? ';
 		var clientUpdate: SessionResponse.ComputeStatus?
 		switch statusUpdate {
 		case .uninitialized:
@@ -252,7 +273,7 @@ extension Session: ComputeWorkerDelegate {
 		case .failedToConnect:
 			clientUpdate = .failed
 		case .unusable:
-			clientUpdate = .failed
+			logger.info("got unusable status update")
 		}
 		if let status = clientUpdate {
 			// inform clients that status changed
