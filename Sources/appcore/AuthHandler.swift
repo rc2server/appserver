@@ -48,7 +48,7 @@ class AuthHandler: BaseHandler {
 			guard let user = try settings.dao.getUser(login: params.login, password: params.password)
 			else {
 				logger.info("invalid login for \(params.login)")
-				let err = try! settings.encode(SessionError.invalidRequest)
+				let err = SessionError.invalidLogin
 				response.status(.unauthorized)
 				try response.send(err).end()
 				return
