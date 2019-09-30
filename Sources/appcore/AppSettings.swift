@@ -56,15 +56,15 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 	/// - Parameter dataDirURL: URL containing resources used by the application.
 	/// - Parameter configData: JSON data for configuration. If nil, will read it from dataDirURL.
 	/// - Parameter dao: The Data Access Object used to retrieve model objects from the database.
-	init(dataDirURL: URL, configData: Data? = nil) {
-		logger.info("settings inited with: \(dataDirURL.absoluteString)")
-		self.dataDirURL = dataDirURL
+	init(dataDirURL inURL: URL, configData: Data? = nil) {
+		precondition(inURL.isFileURL && inURL.path.count > 5)
+		self.dataDirURL = inURL
 		decoder = AppSettings.createJSONDecoder()
 		encoder = AppSettings.createJSONEncoder()
 		
-		var configUrl: URL!
+		let configUrl: URL
 		do {
-			configUrl = dataDirURL.appendingPathComponent("config.json")
+			configUrl = inURL.appendingPathComponent("config.json")
 			let data = configData != nil ? configData! : try Data(contentsOf: configUrl)
 			config = try AppSettings.loadConfig(from: data, with: decoder)
 		} catch {
