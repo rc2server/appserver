@@ -132,8 +132,8 @@ public class App {
 				}
 			}
 			guard let actualPath = dirPath else { throw Errors.invalidDataDirectory }
-			dataDirURL = URL(fileURLWithPath: actualPath)
-			guard dataDirURL.hasDirectoryPath else { throw Errors.invalidDataDirectory }
+			self.dataDirURL = URL(fileURLWithPath: actualPath)
+			guard self.dataDirURL != nil, self.dataDirURL.hasDirectoryPath else { throw Errors.invalidDataDirectory }
 			if let pvalue = portOption.value { listenPort = pvalue }
 		} catch {
 			cli.printUsage(error)
