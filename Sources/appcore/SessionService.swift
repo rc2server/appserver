@@ -16,8 +16,6 @@ import Logging
 //	func handle(command: SessionCommand, socket: SessionConnection)
 //}
 
-// TODO: implement RepeatingTimer to clean up expired sessions
-
 let minReapTime = 5.0
 
 /// the global service that finds/creates the Session and passes appropriate messages to it

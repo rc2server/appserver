@@ -10,7 +10,7 @@ function finish {
 PDIR=`pwd`
 SQLFILE="${PDIR}/rc2root/rc2.sql"
 echo "looking for ${SQLFILE}"
-docker run --name appserver_test -e POSTGRES_PASSWORD="apptest" -p 5434:5432 --rm -d postgres:9
+docker run --name appserver_test -e POSTGRES_PASSWORD="apptest" -p 5434:5432 --rm -d postgres:11
 echo "waiting for db to start"
 sleep 5;
 docker logs appserver_test
