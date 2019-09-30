@@ -107,8 +107,10 @@ public class App {
 	public func run() throws {
 		do {
 			try postInit()
+			logger.info("listening on \(listenPort)")
 			Kitura.addHTTPServer(onPort: listenPort, with: router)
-			Kitura.run(exitOnFailure: false)
+			Kitura.run(exitOnFailure: true)
+			logger.critical("Kitura.run exited")
 		} catch {
 			fatalError("error running: \(error)")
 		}
