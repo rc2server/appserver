@@ -83,7 +83,7 @@ public class ComputeWorker {
 	}
 	
 	public func shutdown() throws {
-		guard state == .connected else {
+		guard state == .connected, socket?.isConnected ?? false else {
 			logger.info("asked to shutdown when not running")
 			throw ComputeError.notConnected
 		}
@@ -92,7 +92,7 @@ public class ComputeWorker {
 	}
 	
 	public func send(data: Data) throws {
-		guard state == .connected, let socket = socket else { throw ComputeError.notConnected }
+		guard state == .connected, let socket = socket, socket.isConnected else { throw ComputeError.notConnected }
 		var headBytes = [UInt8](repeating: 0, count: 8)
 		headBytes.replaceSubrange(0...3, with: valueByteArray(UInt32(0x21).byteSwapped))
 		headBytes.replaceSubrange(4...7, with: valueByteArray(UInt32(data.count).byteSwapped))
@@ -143,16 +143,16 @@ public class ComputeWorker {
 	}
 	
 	private func readNext() {
-		guard let socket = socket else {
-			logger.warning("no open socket to read")
-			return
-		}
-		guard socket.isActive else {
-			logger.info("tried to read closed connection")
+		guard let socket = socket, socket.isActive, !socket.remoteConnectionClosed else {
+			if state == .unusable { return } //duplicate time
+			state = .unusable
+			logger.warning("no open socket to read or closed connection")
 			delegate?.handleConnectionClosed()
 			return
 		}
-		lock.wait()
+		let waitStatus = lock.wait(timeout: .now() + .milliseconds(2))
+		// if lock is busy, don't want to queue another read
+		guard waitStatus == .success else { return }
 		defer { lock.signal() }
 		// in any other case, we'll want to read again
 		defer { readQueue.async { [weak self] in self?.readNext() } }
@@ -161,7 +161,15 @@ public class ComputeWorker {
 		header.initialize(repeating: 0, count: 8)
 		do {
 			let readCount = try socket.read(into: header, bufSize: 8, truncate: true)
-			if readCount == 0 { return }
+			if readCount == 0 {
+				// need to check status of socket
+				if socket.remoteConnectionClosed, state != .unusable {
+					self.state = .unusable
+					self.socket?.close()
+					delegate?.handleConnectionClosed()
+				}
+				return
+			}
 			guard readCount == 8 else {
 				logger.error("failed to read magic header: \(readCount)")
 				return
