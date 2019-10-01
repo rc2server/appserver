@@ -43,6 +43,14 @@ class ComputeCoder {
 		return try encoder.encode(obj)
 	}
 	
+	/// Creates the data to request creation of a new environment
+	func createEnvironment(transactionId: String) throws -> Data {
+		return try encoder.encode(GenericCommand(msg: "createEnvironment", argument: transactionId))
+	}
+	
+	/// Returns the message data to clear the specified environment
+	///
+	/// - Parameter id: the id of the environment
 	func clearEnvironment(id: Int) throws -> Data {
 		return try encoder.encode(ClearEnvironmentCommand(contextId: id))
 	}
@@ -149,6 +157,8 @@ class ComputeCoder {
 	}
 	
 	// MARK: - internal methods
+	
+	
 	private func createQueryId(_ transactionId: String) -> Int {
 		var qid: Int = 0
 		queue.sync {

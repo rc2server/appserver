@@ -119,6 +119,8 @@ class Session {
 			handleClearEnvironment(id: envId)
 		case .watchVariables(let params):
 			handleWatchVariables(params: params, connection: from)
+		case .createEnvironment(let transId):
+			handleCreateEnvironment(transId: transId)
 		}
 	}
 
@@ -210,6 +212,8 @@ extension Session: ComputeWorkerDelegate {
 				handleShowOutput(data: odata)
 			case .execComplete(let edata):
 				handleExecComplete(data: edata)
+			case .envCreated(let data):
+				handleEnvironmentCreated(data: data)
 			}
 		} catch {
 			logger.warning("failed to decode response from compute: \(error)")
@@ -381,6 +385,10 @@ extension Session {
 		let errorData = SessionResponse.ErrorData(transactionId: data.transId, error: serror)
 		broadcastToAllClients(object: SessionResponse.error(errorData))
 	}
+	
+	func handleEnvironmentCreated(data: ComputeResponse.EnvCreated) {
+		// TODO: implement
+	}
 }
 
 // MARK: - command handling
@@ -455,6 +463,15 @@ extension Session {
 		let data = SessionResponse.FileOperationData(transactionId: params.transactionId, operation: params.operation, success: cmdError == nil, fileId: fileId, file: dupfile, error: cmdError)
 		broadcastToAllClients(object: SessionResponse.fileOperation(data))
 		sendSessionInfo(connection: nil)
+	}
+
+	private func handleCreateEnvironment(transId: String) {
+		do {
+			let data = try coder.createEnvironment(transactionId: transId)
+			try worker?.send(data: data)
+		} catch {
+			logger.warning("error sending create environment: \(error)")
+		}
 	}
 
 	private func handleClearEnvironment(id: Int) {

@@ -23,6 +23,7 @@ public enum ComputeResponse: Equatable {
 	case results(Results)
 	case showOutput(ShowOutput)
 	case execComplete(ExecComplete)
+	case envCreated(EnvCreated)
 	
 	init(messageType: String, jsonData: Data, decoder: JSONDecoder) throws {
 		do {
@@ -49,6 +50,9 @@ public enum ComputeResponse: Equatable {
 			case "error":
 				let rsp = try decoder.decode(Error.self, from: jsonData)
 				self = .error(rsp)
+			case "envCreated":
+				let rsp = try decoder.decode(EnvCreated.self, from: jsonData)
+				self = .envCreated(rsp)
 			default:
 				throw ComputeError.invalidInput
 			}
@@ -238,6 +242,11 @@ public enum ComputeResponse: Equatable {
 		func withTransaction(_ transId: String) -> ExecComplete {
 			return ExecComplete(expectShowOutput: expectShowOutput, queryId: queryId, startTime: startTime, images: images, batchNumber: batchNumber, clientData: clientData, transId: transId)
 		}
+	}
+	
+	public struct EnvCreated: Codable, Hashable {
+		let contextId: Int
+		let transactionId: String
 	}
 }
 
