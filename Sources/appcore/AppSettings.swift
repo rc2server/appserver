@@ -57,7 +57,8 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 	/// - Parameter configData: JSON data for configuration. If nil, will read it from dataDirURL.
 	/// - Parameter dao: The Data Access Object used to retrieve model objects from the database.
 	init(dataDirURL inURL: URL, configData: Data? = nil) {
-		precondition(inURL.isFileURL && inURL.path.count > 5)
+		logger.info("init called with \(inURL.path)")
+		precondition(inURL.isFileURL && inURL.path.count > 2, "url = \(inURL.path)")
 		self.dataDirURL = inURL
 		decoder = AppSettings.createJSONDecoder()
 		encoder = AppSettings.createJSONEncoder()
