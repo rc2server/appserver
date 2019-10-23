@@ -321,7 +321,7 @@ extension Session {
 			//if file is too large, only send meta info
 			guard let file = try settings.dao.getFile(id: data.fileId, userId: workspace.userId) else {
 				logger.warning("failed to find file \(data.fileId) to show output")
-				handleErrorResponse(data: ComputeResponse.Error(error: .fileNotFound, details: "unknown file requested", queryId: data.queryId, transId: transId))
+				handleErrorResponse(data: ComputeResponse.Error(error: 101, details: "unknown file requested", queryId: data.queryId, transId: transId))
 				return
 			}
 			var fileData: Data? = nil
