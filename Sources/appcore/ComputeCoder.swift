@@ -45,14 +45,14 @@ class ComputeCoder {
 	
 	/// Creates the data to request creation of a new environment
 	func createEnvironment(transactionId: String) throws -> Data {
-		return try encoder.encode(GenericCommand(msg: "createEnvironment", argument: transactionId))
+		try encoder.encode(GenericCommand(msg: "createEnvironment", argument: transactionId))
 	}
 	
 	/// Returns the message data to clear the specified environment
 	///
 	/// - Parameter id: the id of the environment
 	func clearEnvironment(id: Int) throws -> Data {
-		return try encoder.encode(ClearEnvironmentCommand(contextId: id))
+		try encoder.encode(ClearEnvironmentCommand(contextId: id))
 	}
 	/// Create the data to request help for a topic
 	///
@@ -66,7 +66,7 @@ class ComputeCoder {
 	///
 	/// - Returns: data to send to compute server
 	func saveEnvironment() throws -> Data {
-		return try encoder.encode(GenericCommand(msg: "saveEnv", argument: ""))
+		try encoder.encode(GenericCommand(msg: "saveEnv", argument: ""))
 	}
 	
 	/// Create the data to execute a query
@@ -75,7 +75,7 @@ class ComputeCoder {
 	/// - Parameter query: The query to execute
 	/// - Returns: data to send to compute server
 	func executeScript(transactionId: String, script: String) throws -> Data {
-		return try encoder.encode(ExecuteQuery(queryId: createQueryId(transactionId), script: script))
+		try encoder.encode(ExecuteQuery(queryId: createQueryId(transactionId), script: script))
 	}
 	
 	/// Create the data to execute a file
@@ -84,7 +84,7 @@ class ComputeCoder {
 	/// - Parameter fileId: The id of the file to execute
 	/// - Returns: data to send to compute server
 	func executeFile(transactionId: String, fileId: Int, fileVersion: Int) throws -> Data {
-		return try encoder.encode(ExecuteFile(fileId: fileId, fileVersion: fileVersion, queryId: createQueryId(transactionId)))
+		try encoder.encode(ExecuteFile(fileId: fileId, fileVersion: fileVersion, queryId: createQueryId(transactionId)))
 	}
 	
 	/// Create the data to toggle variable watching
@@ -92,14 +92,14 @@ class ComputeCoder {
 	/// - Parameter enable: Should variables be watched
 	/// - Returns: data to send to compute server
 	func toggleVariableWatch(enable: Bool, contextId: Int?) throws -> Data {
-		return try encoder.encode(ToggleVariables(watch: enable, contextId: contextId))
+		try encoder.encode(ToggleVariables(watch: enable, contextId: contextId))
 	}
 	
 	/// Create the data to close the connection gracefully
 	///
 	/// - Returns: data to send to compute server
 	func close() throws -> Data {
-		return try encoder.encode(GenericCommand(msg: "close", argument: ""))
+		try encoder.encode(GenericCommand(msg: "close", argument: ""))
 	}
 	
 	/// Create the data to request a list of variables and their values
@@ -107,7 +107,7 @@ class ComputeCoder {
 	/// - Parameter deltaOnly: Should it return only changed values, or all values
 	/// - Returns: data to send to compute server
 	func listVariables(deltaOnly: Bool, contextId: Int?) throws -> Data {
-		return try encoder.encode(ListVariableCommand(delta: deltaOnly, contextId: contextId))
+		try encoder.encode(ListVariableCommand(delta: deltaOnly, contextId: contextId))
 	}
 	
 	/// Create the data to open a connection to the compute server
@@ -172,7 +172,7 @@ class ComputeCoder {
 	
 	// For internal usage to lookup a transactionId
 	func queryId(for transId: String) -> Int? {
-		return transactionIds[transId]
+		transactionIds[transId]
 	}
 	
 	// MARK: - private structs for command serialization
