@@ -44,8 +44,8 @@ class ComputeCoder {
 	}
 	
 	/// Creates the data to request creation of a new environment
-	func createEnvironment(transactionId: String) throws -> Data {
-		try encoder.encode(GenericCommand(msg: "createEnvironment", argument: transactionId))
+	func createEnvironment(transactionId: String, parentId: Int) throws -> Data {
+		return try encoder.encode(CreateEnvironmentCommamnd(parentId: parentId, transactionId: transactionId))
 	}
 	
 	/// Returns the message data to clear the specified environment
@@ -268,6 +268,17 @@ class ComputeCoder {
 		init(queryId: Int, script: String) {
 			self.queryId = queryId
 			self.argument = script
+		}
+	}
+	
+	struct CreateEnvironmentCommamnd: Codable {
+		let msg = "createEnviornment"
+		let argument: String
+		let parentId: Int
+		
+		init(parentId: Int, transactionId: String) {
+			self.parentId = parentId
+			self.argument = transactionId
 		}
 	}
 }

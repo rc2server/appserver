@@ -119,8 +119,8 @@ class Session {
 			handleClearEnvironment(id: envId)
 		case .watchVariables(let params):
 			handleWatchVariables(params: params, connection: from)
-		case .createEnvironment(let transId):
-			handleCreateEnvironment(transId: transId)
+		case .createEnvironment(let params):
+			handleCreateEnvironment(transId: params.transactionId, parentId: params.parendId)
 		}
 	}
 
@@ -387,7 +387,8 @@ extension Session {
 	}
 	
 	func handleEnvironmentCreated(data: ComputeResponse.EnvCreated) {
-		// TODO: implement
+		let value = SessionResponse.CreatedEnvironment(transactionId: data.transactionId, environmentId: data.contextId)
+		broadcastToAllClients(object: value)
 	}
 }
 
@@ -465,9 +466,9 @@ extension Session {
 		sendSessionInfo(connection: nil)
 	}
 
-	private func handleCreateEnvironment(transId: String) {
+	private func handleCreateEnvironment(transId: String, parentId: Int) {
 		do {
-			let data = try coder.createEnvironment(transactionId: transId)
+			let data = try coder.createEnvironment(transactionId: transId, parentId: parentId)
 			try worker?.send(data: data)
 		} catch {
 			logger.warning("error sending create environment: \(error)")
