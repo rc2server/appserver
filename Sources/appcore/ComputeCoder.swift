@@ -44,8 +44,8 @@ class ComputeCoder {
 	}
 	
 	/// Creates the data to request creation of a new environment
-	func createEnvironment(transactionId: String, parentId: Int) throws -> Data {
-		return try encoder.encode(CreateEnvironmentCommamnd(parentId: parentId, transactionId: transactionId))
+	func createEnvironment(transactionId: String, parentId: Int, varName: String?) throws -> Data {
+		return try encoder.encode(CreateEnvironmentCommamnd(parentId: parentId, transactionId: transactionId, variableName: varName))
 	}
 	
 	/// Returns the message data to clear the specified environment
@@ -193,7 +193,7 @@ class ComputeCoder {
 		let msg: String
 		let argument: String
 	}
-	
+
 	private struct ClearEnvironmentCommand: Encodable {
 		let msg = "clearEnvironment"
 		let argument = ""
@@ -273,12 +273,17 @@ class ComputeCoder {
 	
 	struct CreateEnvironmentCommamnd: Codable {
 		let msg = "createEnviornment"
+		/// the transactionId is stored here
 		let argument: String
+		/// the parent environment. 0 for global environment
 		let parentId: Int
-		
-		init(parentId: Int, transactionId: String) {
+		/// the name of a variable to assign to the new environment in contextId. If nil, does not assign to a variable
+		let varName: String?
+
+		init(parentId: Int, transactionId: String, variableName: String?) {
 			self.parentId = parentId
 			self.argument = transactionId
+			self.varName = variableName
 		}
 	}
 }

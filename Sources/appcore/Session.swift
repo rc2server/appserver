@@ -120,7 +120,7 @@ class Session {
 		case .watchVariables(let params):
 			handleWatchVariables(params: params, connection: from)
 		case .createEnvironment(let params):
-			handleCreateEnvironment(transId: params.transactionId, parentId: params.parendId)
+			handleCreateEnvironment(transId: params.transactionId, parentId: params.parendId, variableName: params.variableName)
 		}
 	}
 
@@ -466,9 +466,9 @@ extension Session {
 		sendSessionInfo(connection: nil)
 	}
 
-	private func handleCreateEnvironment(transId: String, parentId: Int) {
+	private func handleCreateEnvironment(transId: String, parentId: Int, variableName: String?) {
 		do {
-			let data = try coder.createEnvironment(transactionId: transId, parentId: parentId)
+			let data = try coder.createEnvironment(transactionId: transId, parentId: parentId, varName: variableName)
 			try worker?.send(data: data)
 		} catch {
 			logger.warning("error sending create environment: \(error)")
