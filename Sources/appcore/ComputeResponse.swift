@@ -24,6 +24,8 @@ public enum ComputeResponse: Equatable {
 	case showOutput(ShowOutput)
 	case execComplete(ExecComplete)
 	case envCreated(EnvCreated)
+	case previewInited(PreviewInited)
+	case previewUpdated(PreviewUpdated)
 	
 	init(messageType: String, jsonData: Data, decoder: JSONDecoder) throws {
 		do {
@@ -53,6 +55,12 @@ public enum ComputeResponse: Equatable {
 			case "envCreated":
 				let rsp = try decoder.decode(EnvCreated.self, from: jsonData)
 				self = .envCreated(rsp)
+			case "initPreview":
+				let rsp = try decoder.decode(PreviewInited.self, from: jsonData)
+				self = .previewInited(rsp)
+			case "updatePreview":
+				let rsp = try decoder.decode(PreviewUpdated.self, from: jsonData)
+				self = .previewUpdated(rsp)
 			default:
 				throw ComputeError.invalidInput
 			}
@@ -249,5 +257,26 @@ public enum ComputeResponse: Equatable {
 		let contextId: Int
 		let transactionId: String
 	}
+	
+	public struct PreviewInited: Codable, Hashable {
+		public let previewId: Int
+	}
+	
+	public struct PreviewUpdated: Codable, Hashable , Equatable{
+		public let previewId: Int
+		public let chunkId: Int
+		public let updateComplete: Bool
+		public let updateIdentifier: String
+		public let results: String
+		
+		public init(previewId: Int, chunkId: Int, results: String, updateIdentifier: String = "", updateComplete: Bool) {
+			self.previewId = previewId
+			self.chunkId = chunkId
+			self.results = results
+			self.updateIdentifier = updateIdentifier
+			self.updateComplete = updateComplete
+		}
+	}
+	
 }
 

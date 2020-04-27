@@ -34,6 +34,21 @@ class ComputeCoder {
 	}
 	
 	// MARK: - request methods
+	
+	func initPreview(fileId: Int) throws -> Data {
+		let obj = InitPreviewCommand(fileId: fileId)
+		return try encoder.encode(obj)
+	}
+	
+	func updatePreview(previewId: Int, chunkNumber: Int, includePrevious: Bool) throws -> Data {
+		let obj = UpdatePreviewCommand(previewId: previewId, chunkId: chunkNumber, includePrevious: includePrevious)
+		return try encoder.encode(obj)
+	}
+	
+	func removePreview(previewId: Int) throws -> Data {
+		return try encoder.encode(removePreviewCommand(previewId: previewId));
+	}
+	
 	/// Create the data to request a variable's value
 	///
 	/// - Parameter name: The name of the variable to get
@@ -284,6 +299,44 @@ class ComputeCoder {
 			self.parentId = parentId
 			self.argument = transactionId
 			self.varName = variableName
+		}
+	}
+	
+	struct InitPreviewCommand: Codable {
+		let msg = "initPreview"
+		let argument = ""
+		/// the id of the file to be previewed
+		let fileId: Int
+		
+		init(fileId: Int) {
+			self.fileId = fileId
+		}
+	}
+	
+	struct UpdatePreviewCommand: Codable {
+		let msg = "updstePreview"
+		let argument = ""
+		let includePrevious: Bool
+		/// a unique identifier for each updated. will be sent in each updated response
+		let updateIdentifier: String
+		let previewId: Int
+		let chunkId: Int
+		
+		init(previewId: Int, chunkId: Int, includePrevious: Bool, updateIdentifier: String = "") {
+			self.previewId = previewId
+			self.chunkId = chunkId
+			self.includePrevious = includePrevious
+			self.updateIdentifier = updateIdentifier
+		}
+	}
+	
+	struct removePreviewCommand: Codable {
+		let msg = "removePreview"
+		let argument = ""
+		let previewId: Int
+		
+		init(previewId: Int) {
+			self.previewId = previewId;
 		}
 	}
 }

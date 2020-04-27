@@ -121,6 +121,13 @@ class Session {
 			handleWatchVariables(params: params, connection: from)
 		case .createEnvironment(let params):
 			handleCreateEnvironment(transId: params.transactionId, parentId: params.parendId, variableName: params.variableName)
+		case .initPreview(let fileId):
+			handleInitPreview(fileId: fileId)
+		case .updatePreview(let updateData):
+			handleUpdatePreview(updateData: updateData)
+		case .removePreview(let previewId):
+			handleRemovePreview(previewId: previewId)
+		
 		}
 	}
 
@@ -214,6 +221,10 @@ extension Session: ComputeWorkerDelegate {
 				handleExecComplete(data: edata)
 			case .envCreated(let data):
 				handleEnvironmentCreated(data: data)
+			case .previewInited(let previewData):
+				handleInitPreviewResponse(data: previewData)
+			case .previewUpdated(let data):
+				handlePreviewUpdated(data: data)
 			}
 		} catch {
 			logger.warning("failed to decode response from compute: \(error)")
@@ -390,6 +401,18 @@ extension Session {
 		let value = SessionResponse.CreatedEnvironment(transactionId: data.transactionId, environmentId: data.contextId)
 		broadcastToAllClients(object: value)
 	}
+	
+	func handleInitPreviewResponse(data: ComputeResponse.PreviewInited) {
+		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId)
+		let value = SessionResponse.previewInitialized(obj)
+		broadcastToAllClients(object: value)
+	}
+
+	func handlePreviewUpdated(data: ComputeResponse.PreviewUpdated) {
+		// TODO: implement
+		let value = SessionResponse.PreivewUpdateData(previewId: data.previewId, chunkId: data.chunkId, uniqueIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
+		broadcastToAllClients(object: value)
+	}
 }
 
 // MARK: - command handling
@@ -545,4 +568,32 @@ extension Session {
 		let responseData = SessionResponse.SaveData(transactionId: params.transactionId, success: serror != nil, file: updatedFile, error: serror)
 		broadcastToAllClients(object: SessionResponse.save(responseData))
 	}
+	
+	private func handleInitPreview(fileId: Int) {
+		do {
+			let cmd = try coder.initPreview(fileId: fileId)
+			try worker?.send(data: cmd)
+		} catch {
+			logger.warning("error initing preview: \(error)")
+		}
+	}
+
+	private func handleUpdatePreview(updateData: SessionCommand.UpdatePreviewParams) {
+		do {
+			let cmd = try coder.updatePreview(previewId: updateData.previewId, chunkNumber: updateData.chunkId, includePrevious: updateData.includePrevious)
+			try worker?.send(data: cmd)
+		} catch {
+			logger.warning("error geupdating preview: \(error)")
+		}
+	}
+	
+	private func handleRemovePreview(previewId: Int) {
+		do {
+			let cmd = try coder.removePreview(previewId: previewId)
+			try worker?.send(data: cmd)
+		} catch {
+			logger.warning("error removing preview: \(error)")
+		}
+	}
+
 }
