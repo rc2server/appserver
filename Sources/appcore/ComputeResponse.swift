@@ -260,6 +260,7 @@ public enum ComputeResponse: Equatable {
 	
 	public struct PreviewInited: Codable, Hashable {
 		public let previewId: Int
+		public let errorCode: Int
 	}
 	
 	public struct PreviewUpdated: Codable, Hashable , Equatable{

@@ -403,7 +403,7 @@ extension Session {
 	}
 	
 	func handleInitPreviewResponse(data: ComputeResponse.PreviewInited) {
-		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId)
+		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, errorCode: data.errorCode)
 		let value = SessionResponse.previewInitialized(obj)
 		broadcastToAllClients(object: value)
 	}
