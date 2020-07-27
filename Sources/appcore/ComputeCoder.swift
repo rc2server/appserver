@@ -40,7 +40,7 @@ class ComputeCoder {
 		return try encoder.encode(obj)
 	}
 	
-	func updatePreview(previewId: Int, chunkNumber: Int, includePrevious: Bool) throws -> Data {
+	func updatePreview(previewId: Int, chunkNumber: Int?, includePrevious: Bool) throws -> Data {
 		let obj = UpdatePreviewCommand(previewId: previewId, chunkId: chunkNumber, includePrevious: includePrevious)
 		return try encoder.encode(obj)
 	}
@@ -320,9 +320,9 @@ class ComputeCoder {
 		/// a unique identifier for each updated. will be sent in each updated response
 		let updateIdentifier: String
 		let previewId: Int
-		let chunkId: Int
+		let chunkId: Int?
 		
-		init(previewId: Int, chunkId: Int, includePrevious: Bool, updateIdentifier: String = "") {
+		init(previewId: Int, chunkId: Int?, includePrevious: Bool, updateIdentifier: String = "") {
 			self.previewId = previewId
 			self.chunkId = chunkId
 			self.includePrevious = includePrevious
