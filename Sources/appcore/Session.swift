@@ -121,8 +121,8 @@ class Session {
 			handleWatchVariables(params: params, connection: from)
 		case .createEnvironment(let params):
 			handleCreateEnvironment(transId: params.transactionId, parentId: params.parendId, variableName: params.variableName)
-		case .initPreview(let fileId):
-			handleInitPreview(fileId: fileId)
+		case .initPreview(let data):
+			handleInitPreview(updateData: data)
 		case .updatePreview(let updateData):
 			handleUpdatePreview(updateData: updateData)
 		case .removePreview(let previewId):
@@ -403,14 +403,14 @@ extension Session {
 	}
 	
 	func handleInitPreviewResponse(data: ComputeResponse.PreviewInited) {
-		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, errorCode: data.errorCode)
+		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, errorCode: data.errorCode, uniqueIdentifier: data.updateIdentifier)
 		let value = SessionResponse.previewInitialized(obj)
 		broadcastToAllClients(object: value)
 	}
 
 	func handlePreviewUpdated(data: ComputeResponse.PreviewUpdated) {
 		// TODO: implement
-		let value = SessionResponse.PreivewUpdateData(previewId: data.previewId, chunkId: data.chunkId, uniqueIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
+		let value = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, uniqueIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
 		broadcastToAllClients(object: value)
 	}
 }
@@ -569,9 +569,9 @@ extension Session {
 		broadcastToAllClients(object: SessionResponse.save(responseData))
 	}
 	
-	private func handleInitPreview(fileId: Int) {
+	private func handleInitPreview(updateData: SessionCommand.InitPreviewParams) {
 		do {
-			let cmd = try coder.initPreview(fileId: fileId)
+			let cmd = try coder.initPreview(fileId: updateData.fileId, updateIdentifier: updateData.updateIdentifier)
 			try worker?.send(data: cmd)
 		} catch {
 			logger.warning("error initing preview: \(error)")

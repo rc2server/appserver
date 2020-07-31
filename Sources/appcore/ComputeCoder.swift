@@ -35,8 +35,8 @@ class ComputeCoder {
 	
 	// MARK: - request methods
 	
-	func initPreview(fileId: Int) throws -> Data {
-		let obj = InitPreviewCommand(fileId: fileId)
+	func initPreview(fileId: Int, updateIdentifier: String) throws -> Data {
+		let obj = InitPreviewCommand(fileId: fileId, updateIdentifier: updateIdentifier)
 		return try encoder.encode(obj)
 	}
 	
@@ -307,9 +307,11 @@ class ComputeCoder {
 		let argument = ""
 		/// the id of the file to be previewed
 		let fileId: Int
-		
-		init(fileId: Int) {
+		let updateIdentifier: String
+
+		init(fileId: Int, updateIdentifier: String) {
 			self.fileId = fileId
+			self.updateIdentifier = updateIdentifier
 		}
 	}
 	
