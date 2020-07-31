@@ -98,6 +98,7 @@ class Session {
 		}
 	}
 	
+	/// handles a command from a client
 	func handle(command: SessionCommand, from: SessionConnection) {
 		logger.info("got command: \(command)")
 		switch command {
@@ -300,6 +301,7 @@ extension Session: ComputeWorkerDelegate {
 
 // MARK: - response handling
 extension Session {
+	/// converts help compute response to a SessionResponse
 	func handleHelpResponse(data: ComputeResponse.Help) {
 		var outPaths = [String: String]()
 		data.paths.forEach { value in
@@ -322,6 +324,7 @@ extension Session {
 		broadcastToAllClients(object: SessionResponse.help(helpData))
 	}
 	
+	/// converts showOutput compute response to a SessionResponse
 	func handleShowOutput(data: ComputeResponse.ShowOutput) {
 		guard let transId = data.transId else {
 			logger.error("received show output w/o a transaction id. ignoring")
@@ -347,6 +350,7 @@ extension Session {
 
 	}
 	
+	/// converts execComplete compute response to a SessionResponse
 	func handleExecComplete(data: ComputeResponse.ExecComplete) {
 		var images = [SessionImage]()
 		do {
@@ -363,6 +367,7 @@ extension Session {
 		broadcastToAllClients(object: SessionResponse.execComplete(cdata))
 	}
 	
+	/// converts results compute response to a SessionResponse
 	func handleResultsResponse(data: ComputeResponse.Results) {
 		guard data.transId != nil else {
 			logger.warning("results response sent w/o a transactionId")
@@ -373,6 +378,7 @@ extension Session {
 		broadcastToAllClients(object: SessionResponse.results(sresults))
 	}
 	
+	/// converts variable value compute response to a SessionResponse
 	func handleVariableValueResponse(data: ComputeResponse.VariableValue) {
 		let value = SessionResponse.VariableValueData(value: data.value, environmentId: data.contextId)
 		let responseObject = SessionResponse.variableValue(value)
@@ -383,6 +389,7 @@ extension Session {
 		}
 	}
 	
+	/// converts variableList compute response to a SessionResponse
 	func handleVariableListResponse(data: ComputeResponse.VariableUpdate) {
 		// we send to everyone, even those not watching
 		logger.info("handling variable update with \(data.variables.count) variables")
@@ -391,23 +398,27 @@ extension Session {
 		broadcastToAllClients(object: SessionResponse.variables(varData))
 	}
 	
+	/// converts error compute response to a SessionResponse
 	func handleErrorResponse(data: ComputeResponse.Error) {
 		let serror = SessionError.compute
 		let errorData = SessionResponse.ErrorData(transactionId: data.transId, error: serror)
 		broadcastToAllClients(object: SessionResponse.error(errorData))
 	}
 	
+	/// converts environmentCreated compute response to a SessionResponse
 	func handleEnvironmentCreated(data: ComputeResponse.EnvCreated) {
 		let value = SessionResponse.CreatedEnvironment(transactionId: data.transactionId, environmentId: data.contextId)
 		broadcastToAllClients(object: value)
 	}
 	
+	/// converts initPreview compute response to a SessionResponse
 	func handleInitPreviewResponse(data: ComputeResponse.PreviewInited) {
 		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, errorCode: data.errorCode, uniqueIdentifier: data.updateIdentifier)
 		let value = SessionResponse.previewInitialized(obj)
 		broadcastToAllClients(object: value)
 	}
 
+	/// converts updatePreview compute response to a SessionResponse
 	func handlePreviewUpdated(data: ComputeResponse.PreviewUpdated) {
 		// TODO: implement
 		let value = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, uniqueIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
