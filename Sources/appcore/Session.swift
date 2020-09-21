@@ -413,7 +413,7 @@ extension Session {
 	
 	/// converts initPreview compute response to a SessionResponse
 	func handleInitPreviewResponse(data: ComputeResponse.PreviewInited) {
-		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, errorCode: data.errorCode, uniqueIdentifier: data.updateIdentifier)
+		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, fileId: data.fileId, errorCode: data.errorCode, uniqueIdentifier: data.updateIdentifier)
 		let value = SessionResponse.previewInitialized(obj)
 		broadcastToAllClients(object: value)
 	}
