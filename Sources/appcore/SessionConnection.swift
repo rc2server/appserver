@@ -10,18 +10,11 @@ import KituraWebSocket
 import Rc2Model
 import Logging
 
-//protocol SessionConnectionDelegate {
-//	func connected(socket: SessionConnection)
-//	func closed(socket: SessionConnection, reason: WebSocketCloseReasonCode)
-//	func handle(command: SessionCommand, socket: SessionConnection)
-//}
-
 final class SessionConnection: Hashable {
 	let logger: Logger
 	let socket: WebSocketConnection
 	let user: User
 	let settings: AppSettings
-//	private let delegate: SessionConnectionDelegate
 	private let lock = DispatchSemaphore(value: 1)
 	var watchingVariaables = false
 
@@ -32,7 +25,6 @@ final class SessionConnection: Hashable {
 		self.socket = connection
 		self.user = user
 		self.settings = settings
-//		self.delegate = delegate
 		self.logger = logger
 	}
 	
@@ -49,6 +41,7 @@ final class SessionConnection: Hashable {
 	func send(data: Data) throws {
 		lock.wait()
 		defer { lock.signal() }
+	logger.info("wrote to ws \(String(data: data, encoding: .utf8)!)")
 		socket.send(message: data)
 	}
 	

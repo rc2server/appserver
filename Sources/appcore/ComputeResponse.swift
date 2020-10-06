@@ -55,7 +55,7 @@ public enum ComputeResponse: Equatable {
 			case "envCreated":
 				let rsp = try decoder.decode(EnvCreated.self, from: jsonData)
 				self = .envCreated(rsp)
-			case "initPreview":
+			case "previewInited":
 				let rsp = try decoder.decode(PreviewInited.self, from: jsonData)
 				self = .previewInited(rsp)
 			case "updatePreview":

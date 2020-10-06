@@ -96,8 +96,10 @@ public class ComputeWorker {
 		var headBytes = [UInt8](repeating: 0, count: 8)
 		headBytes.replaceSubrange(0...3, with: valueByteArray(UInt32(0x21).byteSwapped))
 		headBytes.replaceSubrange(4...7, with: valueByteArray(UInt32(data.count).byteSwapped))
+		let rawData = Data(headBytes) + data
+		logger.info("sending to compute: \(String(data: rawData, encoding: .utf8) ?? "no data" )")
 		do {
-			try socket.write(from: Data(headBytes) + data)
+			try socket.write(from: rawData)
 		} catch {
 			logger.warning("failed to write: \(error)")
 			throw ComputeError.failedToWrite
@@ -185,6 +187,7 @@ public class ComputeWorker {
 			// pass along a Data w/o copying the memory
 			let rawPtr = UnsafeMutableRawPointer(readBuffer)
 			let tmpData = Data(bytesNoCopy: rawPtr, count: sizeRead, deallocator: .none)
+			logger.info("read from compute: \(tmpData)")
 			readQueue.sync {
 				self.delegate?.handleCompute(data: tmpData)
 			}

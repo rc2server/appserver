@@ -144,6 +144,7 @@ class ComputeCoder {
 	
 	func parseResponse(data: Data) throws -> ComputeResponse {
 		do {
+			logger.info("parseResponse got \(String(data: data, encoding: .utf8) ?? "???")")
 			let json = try JSON(data: data)
 			guard let msg = json["msg"].string
 				else { throw ComputeError.invalidInput }
@@ -316,7 +317,7 @@ class ComputeCoder {
 	}
 	
 	struct UpdatePreviewCommand: Codable {
-		let msg = "updstePreview"
+		let msg = "updatePreview"
 		let argument = ""
 		let includePrevious: Bool
 		/// a unique identifier for each updated. will be sent in each updated response

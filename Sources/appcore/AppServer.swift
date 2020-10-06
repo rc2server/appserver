@@ -106,6 +106,17 @@ public class App {
 	
 	public func run() throws {
 		do {
+			let handler =  {
+				self.logger.info("caught signal")
+				print("caught signal")
+				Kitura.stop()
+			}
+			let src = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main);
+			src.setEventHandler(handler: handler)
+			src.resume()
+			let src2 = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main);
+			src2.setEventHandler(handler: handler)
+			src2.resume()
 			try postInit()
 			logger.info("listening on \(listenPort)")
 			Kitura.addHTTPServer(onPort: listenPort, with: router)

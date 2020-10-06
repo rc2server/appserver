@@ -111,7 +111,7 @@ class Session {
 		case .getVariable(let params):
 			handleGetVariable(params: params, connnection: from)
 		case .help(let topic):
-			handleHelp(topic: topic, connetion: from)
+			handleHelp(topic: topic, connection: from)
 		case .info:
 			sendSessionInfo(connection: from)
 		case .save(let params):
@@ -123,8 +123,10 @@ class Session {
 		case .createEnvironment(let params):
 			handleCreateEnvironment(transId: params.transactionId, parentId: params.parendId, variableName: params.variableName)
 		case .initPreview(let data):
+			logger.info("initPreview cmd received")
 			handleInitPreview(updateData: data)
 		case .updatePreview(let updateData):
+			logger.info("updatePreview cmd received")
 			handleUpdatePreview(updateData: updateData)
 		case .removePreview(let previewId):
 			handleRemovePreview(previewId: previewId)
@@ -201,8 +203,9 @@ extension Session: Hashable {
 extension Session: ComputeWorkerDelegate {
 	func handleCompute(data: Data) {
 		do {
-			logger.debug("handling: \(String(data: data, encoding: .utf8)!)")
+			logger.info("handling: \(String(data: data, encoding: .utf8)!)")
 			let response = try coder.parseResponse(data: data)
+			logger.info("parsed compute response")
 			switch response {
 			case .open(let openData):
 				handleOpenResponse(success: openData.success, errorMessage: openData.errorMessage)
@@ -228,7 +231,10 @@ extension Session: ComputeWorkerDelegate {
 				handlePreviewUpdated(data: data)
 			}
 		} catch {
-			logger.warning("failed to decode response from compute: \(error)")
+			let path = "/tmp/badParse." + UUID().uuidString
+			logger.info("writing message to \(path)")
+			try! data.write(to: URL(fileURLWithFileSystemRepresentation: path, isDirectory: false, relativeTo: nil))
+			logger.warning("failed to decode response from compute: \(error)// \(String(data: data, encoding: .utf8)!)")
 		}
 	}
 	
@@ -413,15 +419,15 @@ extension Session {
 	
 	/// converts initPreview compute response to a SessionResponse
 	func handleInitPreviewResponse(data: ComputeResponse.PreviewInited) {
-		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, fileId: data.fileId, errorCode: data.errorCode, uniqueIdentifier: data.updateIdentifier)
+		let obj = SessionResponse.PreviewInitedData(previewId: data.previewId, fileId: data.fileId, errorCode: data.errorCode, updateIdentifier: data.updateIdentifier)
 		let value = SessionResponse.previewInitialized(obj)
 		broadcastToAllClients(object: value)
 	}
 
 	/// converts updatePreview compute response to a SessionResponse
 	func handlePreviewUpdated(data: ComputeResponse.PreviewUpdated) {
-		// TODO: implement
-		let value = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, uniqueIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
+		logger.info("handling preview update")
+		let value = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, updateIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
 		broadcastToAllClients(object: value)
 	}
 }
@@ -518,7 +524,7 @@ extension Session {
 		}
 	}
 
-	private func handleHelp(topic: String, connetion: SessionConnection) {
+	private func handleHelp(topic: String, connection: SessionConnection) {
 		do {
 			let data = try? coder.help(topic: topic)
 			try worker?.send(data: data!)
@@ -581,6 +587,7 @@ extension Session {
 	}
 	
 	private func handleInitPreview(updateData: SessionCommand.InitPreviewParams) {
+		logger.info("handleInitPreview called")
 		do {
 			let cmd = try coder.initPreview(fileId: updateData.fileId, updateIdentifier: updateData.updateIdentifier)
 			try worker?.send(data: cmd)
@@ -590,6 +597,7 @@ extension Session {
 	}
 
 	private func handleUpdatePreview(updateData: SessionCommand.UpdatePreviewParams) {
+		logger.info("uandle update preview called")
 		do {
 			let cmd = try coder.updatePreview(previewId: updateData.previewId, chunkNumber: updateData.chunkId, includePrevious: updateData.includePrevious)
 			try worker?.send(data: cmd)
