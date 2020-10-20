@@ -272,6 +272,14 @@ public enum ComputeResponse: Equatable {
 		public let updateIdentifier: String
 		public let results: String
 		
+		enum CodingKeys: String, CodingKey {
+			case previewId
+			case chunkId
+			case updateComplete = "complete"
+			case updateIdentifier
+			case results = "content"
+		}
+
 		public init(previewId: Int, chunkId: Int, results: String, updateIdentifier: String = "", updateComplete: Bool) {
 			self.previewId = previewId
 			self.chunkId = chunkId
