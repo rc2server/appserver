@@ -42,12 +42,11 @@ class AuthHandler: BaseHandler {
 	func loginHandler(request: RouterRequest, response: RouterResponse, handler: @escaping () -> Void)
 	{
 		do {
-			logger.info("login called")
 			let params = try request.read(as: LoginParams.self)
-			logger.info("login for \(params.login)")
+			logger.debug("login for \(params.login)")
 			guard let user = try settings.dao.getUser(login: params.login, password: params.password)
 			else {
-				logger.info("invalid login for \(params.login)")
+				logger.warning("invalid login for \(params.login)")
 				let err = SessionError.invalidLogin
 				response.status(.unauthorized)
 				try response.send(err).end()

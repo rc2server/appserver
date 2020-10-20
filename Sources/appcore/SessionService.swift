@@ -72,7 +72,7 @@ class SessionService: WebSocketService, Hashable {
 	// MARK: - WebSocketService implementation
 	
 	func connected(connection: WebSocketConnection) {
-		logger.info("sessionSerivce connected")
+		logger.debug("sessionSerivce connected")
 		// make sure they have a valid auth token, extract thte user from it, and make sure they own the workspace
 
 		guard let wsStr = connection.request.headers[HTTPHeaders.wspaceId]?.first,

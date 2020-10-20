@@ -144,7 +144,6 @@ class ComputeCoder {
 	
 	func parseResponse(data: Data) throws -> ComputeResponse {
 		do {
-			logger.info("parseResponse got \(String(data: data, encoding: .utf8) ?? "???")")
 			let json = try JSON(data: data)
 			guard let msg = json["msg"].string
 				else { throw ComputeError.invalidInput }
