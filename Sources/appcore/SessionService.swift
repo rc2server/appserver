@@ -72,11 +72,9 @@ class SessionService: WebSocketService, Hashable {
 	// MARK: - WebSocketService implementation
 	
 	func connected(connection: WebSocketConnection) {
-		logger.info("sessionSerivce connected")
+		logger.debug("sessionSerivce connected")
 		// make sure they have a valid auth token, extract thte user from it, and make sure they own the workspace
-		let url = connection.request.urlURL
 
-//		let idStr = url.lastPathComponent
 		guard let wsStr = connection.request.headers[HTTPHeaders.wspaceId]?.first,
 				let wspaceId = Int(wsStr),
 			let token = settings.loginToken(from: connection.request.headers[HTTPHeaders.authorization]?.first),
@@ -135,6 +133,9 @@ class SessionService: WebSocketService, Hashable {
 	}
 	
 	func received(message: Data, from: WebSocketConnection) {
+		let debugStr = String(data: message, encoding: .utf8) ?? "huh?"
+		print(debugStr)
+		logger.warning("ws got message: \(debugStr)")
 		guard message.count > 1 else { return } // json needs {} at minimum, 1 char meesage likely newline
 		guard let sconnection = connections[from.id],
 			let session = session(for: from) else {
@@ -142,6 +143,9 @@ class SessionService: WebSocketService, Hashable {
 			return
 		}
 		do {
+			let path = "/tmp/rcvd." + UUID().uuidString
+			logger.info("writing message to \(path)")
+			try! message.write(to: URL(fileURLWithFileSystemRepresentation: path, isDirectory: false, relativeTo: nil))
 			let command = try settings.decode(SessionCommand.self, from: message)
 			// tell session to handle the query
 			session.handle(command: command, from: sconnection)

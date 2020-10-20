@@ -32,7 +32,6 @@ class AuthMiddleware: RouterMiddleware {
 			return
 		}
 		do {
-			logger.info("filtering \(request.urlURL.path)")
 			guard let tokenStr = HTTPHeaders.extractAuthToken(request: request) else {
 				try handleUnauthorized(response: response)
 				return

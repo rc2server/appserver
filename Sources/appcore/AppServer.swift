@@ -49,7 +49,7 @@ public class App {
 
 	private func connectToDB() -> Bool {
 		do {
-			logger.info("connecting to db @\(settings.config.dbHost):\(settings.config.dbPort)")
+			logger.info("connecting to db \(settings.config.dbUser)@\(settings.config.dbHost):\(settings.config.dbPort)")
 			let connection = Connection(host: settings.config.dbHost, port: "\(settings.config.dbPort)", user: settings.config.dbUser, password: settings.config.dbPassword, dbname: settings.config.dbName, sslMode: .prefer)
 			try connection.open()
 			dao = Rc2DAO(connection: connection)
@@ -63,13 +63,12 @@ public class App {
 
 	public func postInit() throws {
 		parseCommandLine()
-		logger.info("parsed cmd line")
+		logger.debug("parsed cmd line")
 		settings = AppSettings(dataDirURL: dataDirURL)
 		// customize the json (d)encoders used
 		router.encoders[.json] = { AppSettings.createJSONEncoder() }
 		router.decoders[.json] = { AppSettings.createJSONDecoder() }
 		// connect to database
-		logger.info("connecting to db")
 		for i in 0..<settings.config.dbConnectAttemptCount {
 			print("attempting connection \(i)")
 			if connectToDB() {
@@ -106,6 +105,17 @@ public class App {
 	
 	public func run() throws {
 		do {
+			let handler =  {
+				self.logger.info("caught signal")
+				print("caught signal")
+				Kitura.stop()
+			}
+			let src = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main);
+			src.setEventHandler(handler: handler)
+			src.resume()
+			let src2 = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main);
+			src2.setEventHandler(handler: handler)
+			src2.resume()
 			try postInit()
 			logger.info("listening on \(listenPort)")
 			Kitura.addHTTPServer(onPort: listenPort, with: router)

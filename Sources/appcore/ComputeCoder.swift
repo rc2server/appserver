@@ -316,7 +316,7 @@ class ComputeCoder {
 	}
 	
 	struct UpdatePreviewCommand: Codable {
-		let msg = "updstePreview"
+		let msg = "updatePreview"
 		let argument = ""
 		let includePrevious: Bool
 		/// a unique identifier for each updated. will be sent in each updated response

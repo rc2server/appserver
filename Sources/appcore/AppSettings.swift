@@ -65,7 +65,8 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		
 		let configUrl: URL
 		do {
-			configUrl = inURL.appendingPathComponent("config.json")
+			let configFileName = ProcessInfo.processInfo.environment["RC2_CONFIG_FILE_NAME"] ?? "config.json"
+			configUrl = inURL.appendingPathComponent(configFileName)
 			let data = configData != nil ? configData! : try Data(contentsOf: configUrl)
 			config = try AppSettings.loadConfig(from: data, with: decoder)
 		} catch {

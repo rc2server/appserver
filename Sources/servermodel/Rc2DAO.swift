@@ -57,6 +57,7 @@ open class Rc2DAO {
 			throw ModelError.dbError
 		}
 		projects.forEach { wspaceDict[$0.id] = [] }
+		assert(result.rowCount >= 0)
 		for row in 0..<result.rowCount {
 			let wspace = try workspace(from: result, row: row)
 			wspaceDict[wspace.projectId]!.append(wspace)
@@ -69,6 +70,7 @@ open class Rc2DAO {
 			logger.warning("error fetching workspace files: \(result.errorMessage)")
 			throw ModelError.dbError
 		}
+		assert(result.rowCount >= 0)
 		for row in 0..<fresult.rowCount {
 			let aFile = try file(from: fresult, row: row)
 			guard fileDict[aFile.wspaceId] != nil else {
@@ -202,6 +204,7 @@ open class Rc2DAO {
 			throw DBError.queryFailed
 		}
 		var projects: [Project] = []
+		assert(results.rowCount >= 0)
 		for row in 0..<results.rowCount {
 			let project = Project(id: try Rc2DAO.value(columnName: "id", results: results, row: row),
 								  version: try Rc2DAO.value(columnName: "version", results: results, row: row),
@@ -246,6 +249,7 @@ open class Rc2DAO {
 			throw DBError.queryFailed
 		}
 		var wspaces: [Workspace] = []
+		assert(results.rowCount >= 0)
 		for row in 0..<results.rowCount {
 			let wspace = try workspace(from: results, row: row)
 			wspaces.append(wspace)
@@ -374,6 +378,7 @@ open class Rc2DAO {
 			throw DBError.queryFailed
 		}
 		var files = [File]()
+		assert(results.rowCount >= 0)
 		for row in 0..<results.rowCount {
 			files.append(try file(from: results, row: row))
 		}
@@ -548,6 +553,7 @@ open class Rc2DAO {
 		let results = try pgdb.execute(query: query, parameters: [])
 		guard results.wasSuccessful else { throw DBError.queryFailed }
 		var images = [SessionImage]()
+		assert(results.rowCount >= 0)
 		for row in 0..<results.rowCount {
 			images.append(SessionImage(id: try Rc2DAO.value(columnName: "id", results: results, row: row),
 									   sessionId: try Rc2DAO.value(columnName: "sessionId", results: results, row: row),
