@@ -1,0 +1,10 @@
+{
+	"dbHost": "localhost",
+	"dbPort": 5432,
+	"dbUser": "rc2",
+	"dbPassword": "secret",
+	"computeHost": "localhost",
+	"computeTimeout": 4,
+	"computeDbHost": "dbserver",
+	"jwtHmacSecret": "234masdikvlk43bh434l7n53bH(#FJTY8"
+}
