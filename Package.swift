@@ -14,7 +14,7 @@ let package = Package(
         .package(url: "https://github.com/Kitura/Kitura-WebSocket.git", from: "2.1.2"),
 		.package(url: "https://github.com/Kitura/Swift-JWT.git", from: "3.5.3"),
 		.package(url: "https://github.com/Kitura/BlueSocket.git", from: "1.0.0"),
-		.package(url: "https://github.com/rc2server/CommandLine.git", from: "3.0.0"),
+		.package(url: "https://github.com/rc2server/CommandLine.git", from: "3.0.1"),
 		.package(url: "https://github.com/apple/swift-log.git", from: "1.1.1"),
 		.package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.0"),
 		.package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
