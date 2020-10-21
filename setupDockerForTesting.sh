@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# all tests should execute "drop owned by current user"
+# all tests should execute "drop owned by current_user"
 
 # stop docker container on exit
 function finish {
