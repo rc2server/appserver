@@ -49,11 +49,19 @@ class Session {
 			logger.error("failed to create session record: \(error)")
 			throw error
 		}
+		try createWorker(k8sServer: k8sServer)
 		worker = ComputeWorker(wspaceId: workspace.id, sessionId: sessionId, k8sServer: k8sServer, config: settings.config, logger: logger, delegate: self, queue: .global())
 		try worker!.start()
 		try settings.dao.addFileChangeObserver(wspaceId: workspace.id, callback: handleFileChanged(data:))
 	}
 	
+	/// allows testing subclass to override
+	func createWorker(k8sServer: K8sServer? = nil) throws {
+		worker = ComputeWorker(wspaceId: workspace.id, sessionId: sessionId, k8sServer: k8sServer, config: settings.config, logger: logger, delegate: self, queue: .global())
+		try worker!.start()
+		try settings.dao.addFileChangeObserver(wspaceId: workspace.id, callback: handleFileChanged(data:))
+	}
+
 	func shutdown() throws {
 		if let sessionId = sessionId {
 			try settings.dao.closeSessionRecord(sessionId: sessionId)

@@ -10,15 +10,24 @@ import KituraWebSocket
 import Rc2Model
 import Logging
 
-final class SessionConnection: Hashable {
+protocol SessionConnectionI: Hashable {
+	var logger: Logger { get }
+	var socket: WebSocketConnection? { get }
+	var user: User { get }
+	var settings: AppSettings { get }
+	var watchingVariaables: Bool { get }
+}
+
+final class SessionConnection: SessionConnectionI {
 	let logger: Logger
-	let socket: WebSocketConnection
+	let socket: WebSocketConnection?
+	var mySocket: WebSocketConnection { return socket! }
 	let user: User
 	let settings: AppSettings
 	private let lock = DispatchSemaphore(value: 1)
 	var watchingVariaables = false
 
-	var id: String { return socket.id }
+	var id: String { return mySocket.id }
 	
 	init(connection: WebSocketConnection, user: User, settings: AppSettings, logger: Logger)
 	{
@@ -31,18 +40,18 @@ final class SessionConnection: Hashable {
 	func close(reason: WebSocketCloseReasonCode = .normal, description: String? = nil) {
 		lock.wait()
 		defer { lock.signal() }
-		socket.close(reason: reason, description: description)
+		mySocket.close(reason: reason, description: description)
 	}
 
 	func close(reason: WebSocketCloseReasonCode = .normal) {
-		socket.close(reason: reason, description: nil)
+		mySocket.close(reason: reason, description: nil)
 	}
 
 	func send(data: Data) throws {
 		lock.wait()
 		defer { lock.signal() }
 	logger.info("wrote to ws \(String(data: data, encoding: .utf8)!)")
-		socket.send(message: data)
+		mySocket.send(message: data)
 	}
 	
 	func hash(into hasher: inout Hasher) {

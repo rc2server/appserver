@@ -32,8 +32,10 @@ class BaseTest: XCTestCase {
 			Kitura.addHTTPServer(onPort: testPort, with: router)
 			Kitura.start()
 			user = try app.dao.getUser(login: "rc2")
-			guard user != nil else { fatalError("failed to find user 101") }
-			let token = try app.dao.tokenDAO.createToken(user: user!)
+			guard let myUser = user else { fatalError("failed to find user") }
+			userInfo = try app.dao.getUserInfo(user: myUser)
+			guard let myInfo = userInfo else { fatalError("failed to find user info") }
+			let token = try app.dao.tokenDAO.createToken(user: myUser)
 			var jwt = JWT(claims: token)
 			let signedJwt = try jwt.sign(using: app.settings.jwtSigner)
 			BaseTest.authHeader = "Bearer \(signedJwt)"
@@ -43,6 +45,14 @@ class BaseTest: XCTestCase {
 	}()
 	
 	static var user: User?
+	static var userInfo: BulkUserInfo?
+	static var session: Session? = {
+		let project = userInfo!.projects.first!
+		let wspace = userInfo!.workspaces[project.id]!.first!
+		let aSession = TestSession(workspace: wspace, settings: app!.settings)
+		// TODO: add fake connection to get responses
+		return aSession
+	}()
 	
 	override func setUp() {
 		BaseTest.initOnce
@@ -75,5 +85,11 @@ class BaseTest: XCTestCase {
 			requestModifier(req)
 		}
 		req.end()
+	}
+}
+
+class TestSession: Session {
+	override func createWorker(k8sServer: K8sServer? = nil) throws {
+		// do nothing since there is no worker
 	}
 }

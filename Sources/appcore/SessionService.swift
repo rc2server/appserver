@@ -18,6 +18,8 @@ import Logging
 
 let minReapTime = 5.0
 
+/// Manages all sessions as they are created
+
 /// the global service that finds/creates the Session and passes appropriate messages to it
 class SessionService: WebSocketService, Hashable {
 	let logger: Logger
