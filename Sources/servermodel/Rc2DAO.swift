@@ -90,6 +90,10 @@ open class Rc2DAO {
 	/// - Throws: .duplicate if more than one row in database matched
 	public func getUser(id: Int) throws -> User? {
 		let results = try pgdb.execute(query: "select * from rcuser where id = $1", parameters: [QueryParameter(type: .int8, value: id, connection: pgdb)])
+		guard results.wasSuccessful, results.rowCount == 1 else {
+			logger.warning("getUser(id:) failed. \(results.errorMessage)")
+			return nil
+		}
 		return try user(from: results)
 	}
 	
@@ -580,6 +584,10 @@ open class Rc2DAO {
 
 /// helper function to clarify code
 	private func user(from results: PGResult) throws -> User? {
+		guard results.rowCount == 1 else {
+			logger.error("asked for user from empty result set")
+			return nil
+		}
 		return User(id: try Rc2DAO.value(columnName: "id", results: results),
 					version: try Rc2DAO.value(columnName: "version", results: results),
 					login: try Rc2DAO.value(columnName: "login", results: results),

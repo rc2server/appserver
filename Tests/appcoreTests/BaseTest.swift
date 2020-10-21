@@ -32,6 +32,7 @@ class BaseTest: XCTestCase {
 			Kitura.addHTTPServer(onPort: testPort, with: router)
 			Kitura.start()
 			user = try app.dao.getUser(id: 101)
+			guard user != nil else { fatalError("failed to find user 101") }
 			let token = try app.dao.tokenDAO.createToken(user: user!)
 			var jwt = JWT(claims: token)
 			let signedJwt = try jwt.sign(using: app.settings.jwtSigner)
