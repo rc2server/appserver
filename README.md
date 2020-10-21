@@ -9,6 +9,9 @@ On ubuntu, requires libcurl3-gnutls-dev and libpq-dev installed.
 
 when running, uses config.json. To run for testing with postgresql on 5432, set `RC2_CONFIG_FILE_NAME=config-test.json`
 
+## db setup
+
+if rcuser is empty, run `psql -c "select rc2CreateUser('local', 'Local', 'Account', 'singlesignin@rc2.io', 'local');"`
 
 ## Testing Using Docker
 
