@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "Rc2Model",
+        "repositoryURL": "https://github.com/rc2server/appmodelSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "ec2a8d15e71875c2b6e36666c6396d7d560e56a0",
+          "version": "0.2.0"
+        }
+      },
+      {
         "package": "CryptorECC",
         "repositoryURL": "https://github.com/Kitura/BlueECC.git",
         "state": {
@@ -125,6 +134,15 @@
           "branch": null,
           "revision": "80b04f33b086fc90e28d9ae159d43705fb348e16",
           "version": "2.2.200"
+        }
+      },
+      {
+        "package": "pgswift",
+        "repositoryURL": "https://github.com/mlilback/pgswift.git",
+        "state": {
+          "branch": null,
+          "revision": "6869a19d1dab2a7b92a1853088a79b75b9fa4283",
+          "version": "0.1.0"
         }
       },
       {
