@@ -16,9 +16,9 @@ let package = Package(
 		.package(url: "https://github.com/Kitura/BlueSocket.git", from: "1.0.0"),
 		.package(url: "https://github.com/rc2server/CommandLine.git", from: "3.0.1"),
 		.package(url: "https://github.com/apple/swift-log.git", from: "1.1.1"),
-		.package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.9.0"),
+		.package(url: "https://github.com/Kitura/HeliumLogger.git", from: "1.9.2"),
 		.package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
-		.package(url: "https://github.com/IBM-Swift/FileKit.git", from: "0.0.2"),
+		.package(url: "https://github.com/Kitura/FileKit.git", from: "0.0.2"),
         .package(url: "https://github.com/mlilback/pgswift.git", from: "0.1.0"),
 		.package(url: "https://github.com/Thomvis/BrightFutures.git", from: "8.0.1"),
 		.package(url: "https://github.com/ianpartridge/swift-backtrace", from: "1.1.1")

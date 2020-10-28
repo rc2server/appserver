@@ -75,20 +75,20 @@
       },
       {
         "package": "FileKit",
-        "repositoryURL": "https://github.com/IBM-Swift/FileKit.git",
+        "repositoryURL": "https://github.com/Kitura/FileKit.git",
         "state": {
           "branch": null,
-          "revision": "26911acde61a3556b7583f84180048ea6a03973c",
-          "version": "0.0.2"
+          "revision": "58fdf8ab291c800dc57528c997192eb3437ab607",
+          "version": "0.0.200"
         }
       },
       {
         "package": "HeliumLogger",
-        "repositoryURL": "https://github.com/IBM-Swift/HeliumLogger.git",
+        "repositoryURL": "https://github.com/Kitura/HeliumLogger.git",
         "state": {
           "branch": null,
-          "revision": "146a36c2a91270e4213fa7d7e8192cd2e55d0ace",
-          "version": "1.9.0"
+          "revision": "55fd2f0b70793017acee853c53cfcf8da0bd8d8d",
+          "version": "1.9.200"
         }
       },
       {
@@ -114,8 +114,8 @@
         "repositoryURL": "https://github.com/Kitura/Kitura-WebSocket.git",
         "state": {
           "branch": null,
-          "revision": "2595b0a9a4579e7c4abc61c52c588c4fcf988232",
-          "version": "2.1.2"
+          "revision": "31ee0c22500569f81b262884f41710ce3ad540f5",
+          "version": "2.1.200"
         }
       },
       {
@@ -125,6 +125,15 @@
           "branch": null,
           "revision": "8418006e39e2efae9b31ae92721cb597ac29c617",
           "version": "1.2.200"
+        }
+      },
+      {
+        "package": "LoggerAPI",
+        "repositoryURL": "https://github.com/Kitura/LoggerAPI.git",
+        "state": {
+          "branch": null,
+          "revision": "e82d34eab3f0b05391082b11ea07d3b70d2f65bb",
+          "version": "1.9.200"
         }
       },
       {
