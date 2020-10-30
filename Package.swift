@@ -9,8 +9,8 @@ let package = Package(
 		.macOS(.v10_13)
 	],
     dependencies: [
-		.package(url: "https://github.com/rc2server/appmodelSwift.git", from: "0.2.0"),
-        .package(url: "https://github.com/Kitura/Kitura", from: "2.9.0"),
+		.package(url: "https://github.com/rc2server/appmodelSwift.git", from: "0.2.1"),
+        .package(url: "https://github.com/Kitura/Kitura.git", from: "2.9.0"),
         .package(url: "https://github.com/Kitura/Kitura-WebSocket.git", from: "2.1.2"),
 		.package(url: "https://github.com/Kitura/Swift-JWT.git", from: "3.5.3"),
 		.package(url: "https://github.com/Kitura/BlueSocket.git", from: "1.0.0"),
@@ -21,7 +21,7 @@ let package = Package(
 		.package(url: "https://github.com/Kitura/FileKit.git", from: "0.0.2"),
         .package(url: "https://github.com/mlilback/pgswift.git", from: "0.1.0"),
 		.package(url: "https://github.com/Thomvis/BrightFutures.git", from: "8.0.1"),
-		.package(url: "https://github.com/ianpartridge/swift-backtrace", from: "1.1.1")
+		.package(url: "https://github.com/ianpartridge/swift-backtrace.git", from: "1.1.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.

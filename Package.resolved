@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/rc2server/appmodelSwift.git",
         "state": {
           "branch": null,
-          "revision": "ec2a8d15e71875c2b6e36666c6396d7d560e56a0",
-          "version": "0.2.0"
+          "revision": "dda82d02394a53be5942e8ac5f9fab62733c41e9",
+          "version": "0.2.1"
         }
       },
       {
@@ -93,7 +93,7 @@
       },
       {
         "package": "Kitura",
-        "repositoryURL": "https://github.com/Kitura/Kitura",
+        "repositoryURL": "https://github.com/Kitura/Kitura.git",
         "state": {
           "branch": null,
           "revision": "daf6479097469a0c1fe64755db6e23f788a3ec29",
@@ -156,7 +156,7 @@
       },
       {
         "package": "swift-backtrace",
-        "repositoryURL": "https://github.com/ianpartridge/swift-backtrace",
+        "repositoryURL": "https://github.com/ianpartridge/swift-backtrace.git",
         "state": {
           "branch": null,
           "revision": "f2fd8c4845a123419c348e0bc4b3839c414077d5",

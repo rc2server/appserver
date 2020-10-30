@@ -194,10 +194,11 @@ class ComputeCoderTests: XCTestCase {
 		let json = "{ \"msg\": \"error\", \"errorCode\": 101, \"errorDetails\": \"foobar\"} }"
 		let jdata = json.data(using: .utf8)!
 		let resp = try! coder.parseResponse(data: jdata)
-		guard case let ComputeResponse.error(errrsp) = resp
+		guard case let ComputeResponse.error(_) = resp
+		//guard case let ComputeResponse.error(errrsp) = resp
 			else { XCTFail("invalid error response"); return }
 		// FIXME: error responses have changed, but don't know what the json looks like. need to figure it out.
-		//	XCTAssertEqual(errrsp.errorCode, SessionErrorCode.unknownFile)
+		// XCTAssertEqual(errrsp.errorCode, SessionErrorCode.unknownFile)
 		//	XCTAssertEqual(errrsp.details, "foobar")
 	}
 	

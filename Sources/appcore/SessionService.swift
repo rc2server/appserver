@@ -29,10 +29,15 @@ class SessionService: WebSocketService, Hashable {
 	private var connections: [String : SessionConnection] = [:]
 	private var activeSessions: [Int : Session] = [:] // key is wspaceId
 	private var connectionToSession: [String : Int] = [:] // key is connection.id, value is wspaceId
-	private var reapingTimer: RepeatingTimer
+	private var reapingTimer: RepeatingTimer?
 	private var k8sServer: K8sServer?
 	
-	init(settings: AppSettings, logger: Logger)
+	/// initializes SessionService
+	///
+	/// - Parameter settings: The app settings to use
+	/// - Parameter logger: The logger object that messages should be sent to
+	/// - Parameter minimumReapTime: minimum value between this and settings.config.sessionReapDelay. If zero, no reaper will be used (such as with unit tests)
+	init(settings: AppSettings, logger: Logger, minimumReapTime: TimeInterval)
 	{
 		self.settings = settings
 		self.logger = logger
@@ -44,9 +49,10 @@ class SessionService: WebSocketService, Hashable {
 				fatalError("failed to create K8sServer")
 			}
 		}
-		let delay = min(minReapTime, Double(settings.config.sessionReapDelay))
+		guard minReapTime > 0 else { return }
+		let delay = min(minReapTime, TimeInterval(settings.config.sessionReapDelay), 5.0)
 		reapingTimer = RepeatingTimer(timeInterval: delay)
-		reapingTimer.eventHandler = { [weak self] in
+		reapingTimer?.eventHandler = { [weak self] in
 			guard let me = self else { return }
 			let reapTime = Date.timeIntervalSinceReferenceDate - delay
 			me.lock.wait()
@@ -66,7 +72,7 @@ class SessionService: WebSocketService, Hashable {
 			}
 			if me.activeSessions.count == 0 {
 				logger.info("suspending reaper")
-				me.reapingTimer.suspend() // resumed when a session is added
+				me.reapingTimer?.suspend() // resumed when a session is added
 			}
 		}
 	}
@@ -98,7 +104,7 @@ class SessionService: WebSocketService, Hashable {
 		var session = activeSessions[wspaceId]
 		if session == nil {
 			if activeSessions.count == 0 {
-				reapingTimer.resume()
+				reapingTimer?.resume()
 			}
 			//create session, start it, add to activeSessions
 			session = Session(workspace: wspace, settings: settings)
