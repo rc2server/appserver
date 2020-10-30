@@ -192,16 +192,30 @@ class ComputeCoder {
 	
 	// MARK: - private structs for command serialization
 	struct OpenCommand: Codable {
-		let msg = "open"
-		let argument = ""
+		let msg: String
+		let argument: String
 		let wspaceId: Int
 		let sessionRecId: Int
-		let apiVersion: Int = 1
+		let apiVersion: Int
 		let dbhost: String
 		let dbport: String
 		let dbuser: String
 		let dbname: String
 		let dbpassword: String?
+
+		init(wspaceId: Int, sessionRecId: Int, dbhost: String, dbport: String, dbuser: String, dbname: String, dbpassword: String?)
+		{
+			self.msg = "open"
+			self.argument = ""
+			self.apiVersion = 1
+			self.wspaceId = wspaceId
+			self.sessionRecId = sessionRecId
+			self.dbhost = dbhost
+			self.dbport = dbport
+			self.dbuser = dbuser
+			self.dbname = dbname
+			self.dbpassword = dbpassword
+		}
 	}
 	
 	private struct GenericCommand: Encodable {
@@ -234,37 +248,43 @@ class ComputeCoder {
 	}
 	
 	private struct ListVariableCommand: Encodable {
-		let msg = "listVariables"
-		let argument = ""
+		let msg: String
+		let argument: String
 		let contextId: Int?
 		let delta: Bool
 		
 		init(delta: Bool, contextId: Int?) {
+			self.msg = "listVariables"
+			self.argument = ""
 			self.delta = delta
 			self.contextId = contextId
 		}
 	}
 	
 	private struct ToggleVariables: Encodable {
-		let msg = "toggleVariableWatch"
-		let argument = ""
+		let msg: String
+		let argument: String
 		let watch: Bool
 		let contextId: Int?
 		
 		init(watch: Bool, contextId: Int?) {
+			self.msg = "toggleVariableWatch"
+			self.argument = ""
 			self.watch = watch
 			self.contextId = contextId
 		}
 	}
 	
 	private struct ExecuteFile: Encodable {
-		let msg = "execFile"
-		let startTime = Int(Date().timeIntervalSince1970).description
+		let msg: String
+		let startTime: String
 		let argument: String
 		let queryId: Int
 		let clientData: [String: String]
 		
 		init(fileId: Int, fileVersion: Int, queryId: Int) {
+			msg = "execFile"
+			startTime = Int(Date().timeIntervalSince1970).description
 			argument = "\(fileId)"
 			self.queryId = queryId
 			var cdata = [String: String]()
@@ -275,19 +295,21 @@ class ComputeCoder {
 	}
 	
 	struct ExecuteQuery: Codable {
-		let msg = "execScript"
+		let msg: String
 		let queryId: Int
 		let argument: String
-		let startTime = Int(Date().timeIntervalSince1970).description
+		let startTime: String
 		
 		init(queryId: Int, script: String) {
+			self.msg = "execScript"
+			self.startTime = Int(Date().timeIntervalSince1970).description
 			self.queryId = queryId
 			self.argument = script
 		}
 	}
 	
 	struct CreateEnvironmentCommamnd: Codable {
-		let msg = "createEnviornment"
+		let msg: String
 		/// the transactionId is stored here
 		let argument: String
 		/// the parent environment. 0 for global environment
@@ -296,6 +318,7 @@ class ComputeCoder {
 		let varName: String?
 
 		init(parentId: Int, transactionId: String, variableName: String?) {
+			self.msg = "createEnviornment"
 			self.parentId = parentId
 			self.argument = transactionId
 			self.varName = variableName
@@ -303,21 +326,23 @@ class ComputeCoder {
 	}
 	
 	struct InitPreviewCommand: Codable {
-		let msg = "initPreview"
-		let argument = ""
+		let msg: String
+		let argument: String
 		/// the id of the file to be previewed
 		let fileId: Int
 		let updateIdentifier: String
 
 		init(fileId: Int, updateIdentifier: String) {
+			self.msg = "initPreview"
+			self.argument = ""
 			self.fileId = fileId
 			self.updateIdentifier = updateIdentifier
 		}
 	}
 	
 	struct UpdatePreviewCommand: Codable {
-		let msg = "updatePreview"
-		let argument = ""
+		let msg: String
+		let argument: String
 		let includePrevious: Bool
 		/// a unique identifier for each updated. will be sent in each updated response
 		let updateIdentifier: String
@@ -325,6 +350,8 @@ class ComputeCoder {
 		let chunkId: Int?
 		
 		init(previewId: Int, chunkId: Int?, includePrevious: Bool, updateIdentifier: String = "") {
+			self.msg = "updatePreview"
+			self.argument = ""
 			self.previewId = previewId
 			self.chunkId = chunkId
 			self.includePrevious = includePrevious
@@ -333,11 +360,13 @@ class ComputeCoder {
 	}
 	
 	struct removePreviewCommand: Codable {
-		let msg = "removePreview"
-		let argument = ""
+		let msg: String
+		let argument: String
 		let previewId: Int
 		
-		init(previewId: Int) {
+		init(previewId: Int, message: String = "removePreview", arg: String = "") {
+			msg = "removePreview"
+			argument = ""
 			self.previewId = previewId;
 		}
 	}

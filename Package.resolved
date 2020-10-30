@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "Cryptor",
+        "repositoryURL": "https://github.com/Kitura/BlueCryptor.git",
+        "state": {
+          "branch": null,
+          "revision": "ee5880e031da4c609f372cf7472476ab51d5dd19",
+          "version": "1.0.200"
+        }
+      },
+      {
         "package": "CryptorECC",
         "repositoryURL": "https://github.com/Kitura/BlueECC.git",
         "state": {
@@ -98,6 +107,15 @@
           "branch": null,
           "revision": "daf6479097469a0c1fe64755db6e23f788a3ec29",
           "version": "2.9.200"
+        }
+      },
+      {
+        "package": "Kitura-net",
+        "repositoryURL": "https://github.com/IBM-Swift/Kitura-net.git",
+        "state": {
+          "branch": null,
+          "revision": "e017a57772eb477c294d72b25ab9ae38d25539f5",
+          "version": "2.4.200"
         }
       },
       {

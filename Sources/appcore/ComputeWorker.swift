@@ -158,7 +158,7 @@ public class ComputeWorker {
 		defer { lock.signal() }
 		// in any other case, we'll want to read again
 		defer { readQueue.async { [weak self] in self?.readNext() } }
-		var header = UnsafeMutablePointer<CChar>.allocate(capacity: 8)
+		let header = UnsafeMutablePointer<CChar>.allocate(capacity: 8)
 		defer { header.deallocate() }
 		header.initialize(repeating: 0, count: 8)
 		do {
