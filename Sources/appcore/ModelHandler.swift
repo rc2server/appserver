@@ -9,7 +9,7 @@ import Kitura
 import Rc2Model
 import servermodel
 import Logging
-import ZIPFoundation
+import Zip
 
 class ModelHandler: BaseHandler {
 	let logger = Logger(label: "rc2.ModelHandler")
@@ -112,11 +112,14 @@ class ModelHandler: BaseHandler {
 			// write incoming data to zip file that will be removed
 			let zipTmp = topTmpDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("zip")
 			try zipData.write(to: zipTmp)
-			defer { try? fm.removeItem(at: zipTmp)}
+			defer { try? fm.removeItem(at: zipTmp) }
 			//create directory to expand zip into
 			let tmpDir = topTmpDir.appendingPathComponent(UUID().uuidString, isDirectory: true)
 			try fm.createDirectory(at: tmpDir, withIntermediateDirectories: true, attributes: nil)
-			try fm.unzipItem(at: zipTmp, to: tmpDir)
+			try Zip.unzipFile(zipTmp, destination: tmpDir, overwrite: true, password: nil)
+
+//			try fm.unzipItem(at: zipTmp, to: tmpDir)
+			
 			try? fm.removeItem(at: zipTmp)
 			return tmpDir
 		} catch {

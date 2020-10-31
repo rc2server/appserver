@@ -1,6 +1,6 @@
 # appserver
 
-The appserver for rc2. Uses swift 5.1
+The appserver for rc2. Uses swift 5.3
 
 (this was in old version, not sure if still true)
 On ubuntu, requires libcurl3-gnutls-dev and libpq-dev installed.
@@ -18,4 +18,9 @@ if rcuser is empty, run `psql -c "select rc2CreateUser('local', 'Local', 'Accoun
 If docker is not located at  `/usr/local/bin/docker`  on your systerm, specify the path in the DOCKER_EXE environment variable before running the tests. 
 
 ## to fix
+
+## notes
+
+need to run `export KITURA_NIO=1` before building
+
 
