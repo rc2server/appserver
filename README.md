@@ -23,4 +23,5 @@ If docker is not located at  `/usr/local/bin/docker`  on your systerm, specify t
 
 need to run `export KITURA_NIO=1` before building
 
+for testing, run `export RC2_CONFIG_FILE_NAME=config-test.json`
 

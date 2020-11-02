@@ -13,6 +13,8 @@ import SwiftJWT
 import Rc2Model
 import servermodel
 import Logging
+import WebSocketKit
+import NIO
 @testable import appcore
 
 class BaseTest: XCTestCase {
@@ -20,6 +22,7 @@ class BaseTest: XCTestCase {
 	static let testPort = 8888
 	static let app: App? = try? App(["-p", "8888"])
 	static var authHeader: String!
+	static let evGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 	
 	private static let initOnce: () = {
 		guard let app = app else {
@@ -29,7 +32,9 @@ class BaseTest: XCTestCase {
 		do {
 			try app.postInit()
 			let router = app.router
-			Kitura.addHTTPServer(onPort: testPort, with: router)
+
+			let httpServer = Kitura.addHTTPServer(onPort: testPort, with: router)
+			try httpServer.setEventLoopGroup(evGroup)
 			Kitura.start()
 			user = try app.dao.getUser(login: "rc2")
 			guard let myUser = user else { fatalError("failed to find user") }

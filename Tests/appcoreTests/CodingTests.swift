@@ -7,12 +7,24 @@
 
 import XCTest
 import Foundation
+import NIO
+import NIOWebSocket
+import WebSocketKit
 @testable import appcore
 @testable import Rc2Model
 
 final class CodingTests: BaseTest {
 	func testPreviewUpdated() throws {
 		XCTAssert(true)
+    let evGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    defer { try! evGroup.syncShutdownGracefully() }
+    let ev = evGroup.next()
+    let promise = ev.makePromise(of: String.self)
+//    let closePromise = evGroup.next()
+
+    WebSocket.connect(to: "ws://localhost:8888", on: evGroup) { wspace in 
+      print("websocket connected")
+    }
 	}
 	
 	static var allTests = [
