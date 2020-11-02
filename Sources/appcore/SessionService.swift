@@ -24,6 +24,7 @@ let minReapTime = 5.0
 class SessionService: WebSocketService, Hashable {
 	let logger: Logger
 	let settings: AppSettings
+	var connectionTimeout: Int?
 	private(set) var user: User?
 	private let lock = DispatchSemaphore(value: 1)
 	private var connections: [String : SessionConnection] = [:]

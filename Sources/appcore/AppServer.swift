@@ -118,6 +118,7 @@ public class App {
 			src2.resume()
 			try postInit()
 			logger.info("listening on \(listenPort)")
+			// TODO: assign below to let httpServer = , then call httpServer.eventLoopGrpup =
 			Kitura.addHTTPServer(onPort: listenPort, with: router)
 			Kitura.run(exitOnFailure: true)
 			logger.critical("Kitura.run exited")
