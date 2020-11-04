@@ -317,11 +317,4 @@ final class Rc2DAOTests: XCTestCase {
 			else { XCTFail("failed to get user \(userId)"); fatalError() }
 		return try dao.getUserInfo(user: user)
 	}
-	static var allTests = [
-		("testUserMethods", testUserMethods),
-		("testWorkspaceMethods", testWorkspaceMethods),
-		("testSessionRecord", testSessionRecord),
-		("testFiles", testFiles),
-		("testImages", testImages),
-	]
 }

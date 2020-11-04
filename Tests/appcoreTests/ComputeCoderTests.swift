@@ -6,31 +6,6 @@ class ComputeCoderTests: XCTestCase {
 	var coder: ComputeCoder!
 	var decoder: JSONDecoder!
 	
-	static var allTests = [
-		("testOpenSuccess", testOpenSuccess),
-		("testOpenFailure", testOpenFailure),
-		("testOpenMalformed", testOpenMalformed),
-		("testHelpSuccess", testOpenSuccess),
-		("testHelpMalformed", testOpenMalformed),
-		("testErrorSuccess", testErrorSuccess),
-		("testErrorMalformed", testErrorMalformed),
-		("testBasicExecFile", testBasicExecFile),
-		("testResults", testResults),
-		("testHelp", testHelp),
-		("testOpen", testOpen),
-		("testClose", testClose),
-		("testHelp", testHelp),
-		("testGetVariable", testGetVariable),
-		("testSaveEnvironment", testSaveEnvironment),
-		("testExecuteFile", testExecuteFile),
-		("testExecuteScript", testExecuteScript),
-		("testToggleWatch", testToggleWatch),
-		("testListVariables", testListVariables),
-		("testVariableDelta", testVariableDelta),
-		("testVariableUpdate", testVariableUpdate),
-		("testDataFrameParser", testDataFrameParser),
-	]
-	
 	struct JsonResponse: Codable {
 		let msg: String
 		let argument: String?

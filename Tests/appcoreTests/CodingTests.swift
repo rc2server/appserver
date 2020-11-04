@@ -27,11 +27,6 @@ final class CodingTests: BaseTest {
     }
 	}
 	
-	static var allTests = [
-		("testPreviewUpdated", testPreviewUpdated),
-	]
-	
-
 }
 
 let updateJson = """

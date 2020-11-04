@@ -7,7 +7,4 @@ final class kappserverTests: XCTestCase {
 		
 	}
 	
-	static var allTests = [
-		("testNothing", testNothing),
-	]
 }
