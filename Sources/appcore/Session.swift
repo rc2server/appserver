@@ -97,7 +97,7 @@ class Session {
 			lastClientDisconnect = Date()
 		}
 		// see if can stop watching variables
-		if watchingVariables && !connections.map({ $0.watchingVariaables}).contains(true) {
+		if watchingVariables && !connections.map({ $0.watchingVariables}).contains(true) {
 			do {
 				try worker?.send(data: coder.toggleVariableWatch(enable: false, contextId: nil))
 			} catch {
@@ -552,10 +552,10 @@ extension Session {
 	
 	// toggle variable watch on the compute server if it needs to be based on this request
 	private func handleWatchVariables(params: SessionCommand.WatchVariablesParams, connection: SessionConnection) {
-		guard params.watch != connection.watchingVariaables else { return } // nothing to change
-		connection.watchingVariaables = params.watch
+		guard params.watch != connection.watchingVariables else { return } // nothing to change
+		connection.watchingVariables = params.watch
 		// should we still be watching?
-		let shouldWatch = connections.first(where: { $0.watchingVariaables }) != nil
+		let shouldWatch = connections.first(where: { $0.watchingVariables }) != nil
 		// either toggle if overall change in state, otherwise ask for updated list so socket can know all the current values
 		do {
 			var cmd = try coder.toggleVariableWatch(enable: shouldWatch, contextId: params.environmentId)

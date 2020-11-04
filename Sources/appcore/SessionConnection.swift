@@ -15,7 +15,7 @@ protocol SessionConnectionI: Hashable {
 	var socket: WebSocketConnection? { get }
 	var user: User { get }
 	var settings: AppSettings { get }
-	var watchingVariaables: Bool { get }
+	var watchingVariables: Bool { get }
 }
 
 final class SessionConnection: SessionConnectionI {
@@ -25,7 +25,7 @@ final class SessionConnection: SessionConnectionI {
 	let user: User
 	let settings: AppSettings
 	private let lock = DispatchSemaphore(value: 1)
-	var watchingVariaables = false
+	var watchingVariables = false
 
 	var id: String { return mySocket.id }
 	
