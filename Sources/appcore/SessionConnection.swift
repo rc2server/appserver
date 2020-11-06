@@ -21,15 +21,14 @@ protocol SessionConnectionI: Hashable {
 final class SessionConnection: SessionConnectionI {
 	let logger: Logger
 	let socket: WebSocketConnection?
-	var mySocket: WebSocketConnection { return socket! }
 	let user: User
 	let settings: AppSettings
 	private let lock = DispatchSemaphore(value: 1)
 	var watchingVariables = false
 
-	var id: String { return mySocket.id }
+	var id: String { return socket?.id ?? "nil" }
 	
-	init(connection: WebSocketConnection, user: User, settings: AppSettings, logger: Logger)
+	init(connection: WebSocketConnection?, user: User, settings: AppSettings, logger: Logger)
 	{
 		self.socket = connection
 		self.user = user
@@ -40,18 +39,18 @@ final class SessionConnection: SessionConnectionI {
 	func close(reason: WebSocketCloseReasonCode = .normal, description: String? = nil) {
 		lock.wait()
 		defer { lock.signal() }
-		mySocket.close(reason: reason, description: description)
+		socket?.close(reason: reason, description: description)
 	}
 
 	func close(reason: WebSocketCloseReasonCode = .normal) {
-		mySocket.close(reason: reason, description: nil)
+		socket?.close(reason: reason, description: nil)
 	}
 
 	func send(data: Data) throws {
 		lock.wait()
 		defer { lock.signal() }
 	logger.info("wrote to ws \(String(data: data, encoding: .utf8)!)")
-		mySocket.send(message: data)
+		socket?.send(message: data)
 	}
 	
 	func hash(into hasher: inout Hasher) {
