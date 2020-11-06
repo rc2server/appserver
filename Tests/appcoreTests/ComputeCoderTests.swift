@@ -20,7 +20,7 @@ class ComputeCoderTests: XCTestCase {
 	}
 	
 	// MARK: - request tests
-	func testGetVariable() {
+	func testCoderGetVariable() {
 		let data = try! coder.getVariable(name: "foo123", contextId: nil, clientIdentifier: "foo")
 		let json = try! decoder.decode(JsonResponse.self, from: data)
 		XCTAssertEqual(json.msg, "getVariable")
@@ -28,20 +28,20 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(json.clientData?["clientIdent"], "foo")
 	}
 	
-	func testHelp() {
+	func testCoderHelp() {
 		let data = try! coder.help(topic: "rnorm")
 		let json = try! decoder.decode(JsonResponse.self, from: data)
 		XCTAssertEqual(json.msg, "help")
 		XCTAssertEqual(json.argument, "rnorm")
 	}
 	
-	func testSaveEnvironment() {
+	func testCoderSaveEnvironment() {
 		let data = try! coder.saveEnvironment()
 		let json = try! decoder.decode(JsonResponse.self, from: data)
 		XCTAssertEqual(json.msg, "saveEnv")
 	}
 	
-	func testExecuteScript() {
+	func testCoderExecuteScript() {
 		let encoder = AppSettings.createJSONEncoder()
 		let params = SessionCommand.ExecuteParams(sourceCode: "2*2", environmentId: 101)
 		let cmd = SessionCommand.execute(params)
@@ -63,7 +63,7 @@ class ComputeCoderTests: XCTestCase {
 //		XCTAssertEqual(json.argument, script)
 	}
 	
-	func testExecuteFile() {
+	func testCoderExecuteFile() {
 		let fileId = 23
 		let tid = "foo2"
 		let data = try! coder.executeFile(transactionId: tid, fileId: fileId, fileVersion: 2)
@@ -72,7 +72,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(json.clientData?["fileId"], String(fileId))
 	}
 	
-	func testToggleWatch() {
+	func testCoderToggleWatch() {
 		let data = try! coder.toggleVariableWatch(enable: true, contextId: nil)
 		let json = try! decoder.decode(JsonResponse.self, from: data)
 		XCTAssertEqual(json.msg, "toggleVariableWatch")
@@ -80,14 +80,14 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(json.watch, true)
 	}
 	
-	func testClose() {
+	func testCoderClose() {
 		let data = try! coder.close()
 		let json = try! decoder.decode(JsonResponse.self, from: data)
 		XCTAssertEqual(json.msg, "close")
 		XCTAssertEqual(json.argument, "")
 	}
 	
-	func testListVariables() {
+	func testCoderListVariables() {
 		let data = try! coder.listVariables(deltaOnly: true, contextId: nil)
 		let json = try! decoder.decode(JsonResponse.self, from: data)
 		XCTAssertEqual(json.msg, "listVariables")
@@ -95,7 +95,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(json.delta, true)
 	}
 	
-	func testOpen() {
+	func testCoderOpen() {
 		let wspaceId = 101
 		let sessionId = 22012
 		let dbHost = "dbserver"
@@ -112,7 +112,7 @@ class ComputeCoderTests: XCTestCase {
 	}
 	
 	// MARK: - Response tests
-	func testOpenSuccess() {
+	func testCoderOpenSuccess() {
 		let openJson = """
 	{"msg": "openresponse", "success": true }
 """
@@ -124,7 +124,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(openData.success, true)
 	}
 	
-	func testOpenFailure() {
+	func testCoderOpenFailure() {
 		let json = """
 		{"msg": "openresponse", "success": false, "errorMessage": "test error" }
 		"""
@@ -137,14 +137,20 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(openData.errorMessage, "test error")
 	}
 	
-	func testOpenMalformed() {
+	func testCoderOpenMalformed() {
 		let json = """
 		{"msg": "openresponse", "succe4ss": false }
 		"""
-		XCTAssertThrowsError(try coder.parseResponse(data: json.data(using: .utf8)!))
+		do {
+			_ = try coder.parseResponse(data: json.data(using: .utf8)!)
+		} catch let error where error is DecodingError {
+			// do nothing because expected this type of error
+		} catch {
+			XCTFail("unexpected error with malfored error \(error)")
+		}
 	}
 	
-	func testHelpSuccess() {
+	func testCoderHelpSuccess() {
 		let json = """
 		{"msg": "help", "topic": "print", "paths": [ "/foo", "/bar" ] }
 		"""
@@ -157,7 +163,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(helpData.paths[1], "/bar")
 	}
 	
-	func testHelpMalformed() {
+	func testCoderHelpMalformed() {
 		let json = """
 		{"msg": "help", "topic": "print" }
 		"""
@@ -165,26 +171,29 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertThrowsError(try coder.parseResponse(data: json.data(using: .utf8)!))
 	}
 	
-	func testErrorSuccess() {
+	func testCoderErrorSuccess() {
 		let json = "{ \"msg\": \"error\", \"errorCode\": 101, \"errorDetails\": \"foobar\"} }"
 		let jdata = json.data(using: .utf8)!
 		let resp = try! coder.parseResponse(data: jdata)
-		guard case let ComputeResponse.error(_) = resp
+		guard case let ComputeResponse.error(err) = resp
 		//guard case let ComputeResponse.error(errrsp) = resp
 			else { XCTFail("invalid error response"); return }
+		// above doesn't work without err being there. but it is not used. We just do a dummy use of it to fix this
+		print("got \(err)")
+		
 		// FIXME: error responses have changed, but don't know what the json looks like. need to figure it out.
 		// XCTAssertEqual(errrsp.errorCode, SessionErrorCode.unknownFile)
 		//	XCTAssertEqual(errrsp.details, "foobar")
 	}
 	
-	func testErrorMalformed() {
+	func testCoderErrorMalformed() {
 		let json = """
 		{"msg": "error", "Code": 123, "errorDetails": "foobar"}
 		"""
 		XCTAssertThrowsError(try coder.parseResponse(data: json.data(using: .utf8)!))
 	}
 	
-	func testBasicExecFile() {
+	func testCoderBasicExecFile() {
 		let qid = queryId(for: "foo1")
 		let json = """
 		{ "msg": "execComplete", "transId": "foo1", "queryId": \(qid), "expectShowOutput": true, "clientData": { "fileId": "33" }, "startTime": "", "imgBatch": 22, "images": [ 111, 222 ] }
@@ -201,7 +210,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(execData.images?[1], 222)
 	}
 	
-	func testResults() {
+	func testCoderResults() {
 		let qid = queryId(for: "foo2")
 		let json = """
 		{ "msg": "results", "is_error": false, "string": "R output", "queryId": \(qid) }
@@ -214,7 +223,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(results.string, "R output")
 	}
 	
-	func testShowOutput() {
+	func testCoderShowOutput() {
 		let qid = queryId(for: "foo3")
 		let json = """
 		{ "msg": "showoutput", "fileId": 22, "fileVersion": 1, "fileName" : "foobar.pdf", "queryId": \(qid) }
@@ -260,7 +269,7 @@ class ComputeCoderTests: XCTestCase {
 	//	}
 	// TODO: add tests for variableValue and variables when those responses are properly handled
 	
-	func testVariableUpdate() {
+	func testCoderVariableUpdate() {
 		let json = """
 		{"clientData":{},"delta":false, "msg":"variableupdate", "variables":{"headless":{"class":"matrix", "length":8,"name":"headless", "ncol":2,"nrow":4,"primitive":false, "type":"i","value":[1,2,3,4,5,6,7,8]}, "sampleMatrix":{"class":"matrix", "dimnames":[["x","y","z","a"],["foo","bar"]], "length":8,"name":"sampleMatrix","ncol":2,"nrow":4 ,"primitive":false,"type":"i","value":[1,2,3,4,5,6,7,8]}}}
 		"""
@@ -273,7 +282,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(varData.variables["sampleMatrix"]?.name, "sampleMatrix")
 	}
 	
-	func testVariableDelta() {
+	func testCoderVariableDelta() {
 		let json = """
 		{
 			"clientData": {},
@@ -302,7 +311,7 @@ class ComputeCoderTests: XCTestCase {
 		XCTAssertEqual(theVar?.name, "x")
 	}
 	
-	func testDataFrameParser() {
+	func testCoderDataFrameParser() {
 		let json = """
 		{"clientData":{},"delta":false,"msg":"variableupdate","variables":{"cdf":
 		{"class":"data.frame","type":"data.frame",  "columns":[{"name":"c1","type":"b","values":[false,true,null,null,true,false]},{"name":"c2","type":"d","values":[3.14,null,"NaN",21.0,"Inf","-Inf"]},{"name":"c3","type":"s","values":["Aladdin",null,"NA","Mario","Mark","Alex"]},{"name":"c4","type":"i","values":[1,2,3,null,5,null]}],"name":"cdf","ncol":4,"nrow":6,"row.names":["1","2","3","4","5","6"],"summary":"JSONSerialization barfs on a real R summary text with control characters"}
