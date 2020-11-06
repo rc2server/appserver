@@ -10,15 +10,7 @@ import KituraWebSocket
 import Rc2Model
 import Logging
 
-protocol SessionConnectionI: Hashable {
-	var logger: Logger { get }
-	var socket: WebSocketConnection? { get }
-	var user: User { get }
-	var settings: AppSettings { get }
-	var watchingVariables: Bool { get }
-}
-
-final class SessionConnection: SessionConnectionI {
+final class SessionConnection: Hashable {
 	let logger: Logger
 	let socket: WebSocketConnection?
 	let user: User
