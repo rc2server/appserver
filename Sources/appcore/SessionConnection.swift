@@ -10,6 +10,11 @@ import KituraWebSocket
 import Rc2Model
 import Logging
 
+/// really just for testing purposes. Gets calls write calls to remote socket
+protocol SessionConnectionDelegate: class {
+	func connectionDataSent(data: Data) 
+}
+
 final class SessionConnection: Hashable {
 	let logger: Logger
 	let socket: WebSocketConnection?
@@ -17,6 +22,7 @@ final class SessionConnection: Hashable {
 	let settings: AppSettings
 	private let lock = DispatchSemaphore(value: 1)
 	var watchingVariables = false
+	weak var delegate: SessionConnectionDelegate?
 
 	var id: String { return socket?.id ?? "nil" }
 	
@@ -41,8 +47,10 @@ final class SessionConnection: Hashable {
 	func send(data: Data) throws {
 		lock.wait()
 		defer { lock.signal() }
-	logger.info("wrote to ws \(String(data: data, encoding: .utf8)!)")
 		socket?.send(message: data)
+		if let del = delegate { 
+			del.connectionDataSent(data: data) 
+		}
 	}
 	
 	func hash(into hasher: inout Hasher) {
