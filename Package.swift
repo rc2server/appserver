@@ -22,7 +22,8 @@ let package = Package(
         .package(url: "https://github.com/mlilback/pgswift.git", from: "0.1.0"),
 		.package(url: "https://github.com/Thomvis/BrightFutures.git", from: "8.0.1"),
 		.package(url: "https://github.com/ianpartridge/swift-backtrace.git", from: "1.1.1"),
-		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.0.0")
+		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.0.0"),
+		.package(url: "https://github.com/mlilback/SwiftyJSON.git", .branch("master"))
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -49,7 +50,7 @@ let package = Package(
 			]),
         .testTarget(
             name: "appcoreTests",
-            dependencies: ["appcore",
+            dependencies: ["appcore", "SwiftyJSON",
 			.product(name: "WebSocketKit", package: "websocket-kit")],
 			resources: [.copy("Resources")]
 			),

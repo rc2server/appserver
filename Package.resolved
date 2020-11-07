@@ -227,6 +227,15 @@
         }
       },
       {
+        "package": "SwiftyJSON",
+        "repositoryURL": "https://github.com/mlilback/SwiftyJSON.git",
+        "state": {
+          "branch": "master",
+          "revision": "5bcfbeb71a7a8575e46aa04087af01a3d9e1abfb",
+          "version": null
+        }
+      },
+      {
         "package": "TypeDecoder",
         "repositoryURL": "https://github.com/Kitura/TypeDecoder.git",
         "state": {
