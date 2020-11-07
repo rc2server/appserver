@@ -211,9 +211,9 @@ extension Session: Hashable {
 extension Session: ComputeWorkerDelegate {
 	func handleCompute(data: Data) {
 		do {
-			logger.info("handling: \(String(data: data, encoding: .utf8)!)")
+			logger.debug("handling: \(String(data: data, encoding: .utf8)!)")
 			let response = try coder.parseResponse(data: data)
-			logger.info("parsed compute response")
+			logger.debug("parsed compute response")
 			switch response {
 			case .open(let openData):
 				handleOpenResponse(success: openData.success, errorMessage: openData.errorMessage)
