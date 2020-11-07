@@ -146,7 +146,10 @@ class ComputeCoder {
 		do {
 			let json = try JSON(data: data)
 			guard let msg = json["msg"].string
-				else { throw ComputeError.invalidInput }
+				else { 
+					logger.warning("no msg in data received from compute")
+					throw ComputeError.invalidInput 
+				}
 			let queryId = json["queryId"].int
 			let transId = queryIds[queryId ?? -1] // trans/query ids are always positive, avoid nil check
 			let response = try ComputeResponse(messageType: msg, jsonData: data, decoder: decoder)

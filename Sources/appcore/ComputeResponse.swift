@@ -180,7 +180,10 @@ public enum ComputeResponse: Equatable, Codable {
 		// initializer that converts the [String : Any] dictionary to a variable
 		init(json: JSON) throws {
 			let dname = json["name"].string
-			guard dname != nil else { throw ComputeError.invalidInput }
+			guard dname != nil else { 
+				logger.warning("received VariableValue without a name")
+				throw ComputeError.invalidInput 
+			}
 			name = dname!
 			startTime = json["startTime"].string ?? ""
 			clientData = json["clientData"].dictionary?.mapValues { $0.string ?? "" }
