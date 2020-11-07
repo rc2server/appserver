@@ -238,11 +238,14 @@ extension Session: ComputeWorkerDelegate {
 			case .previewUpdated(let data):
 				handlePreviewUpdated(data: data)
 			}
+		} catch let error as ComputeError {
+			logger.warning("got compute error: \(error.localizedDescription)")
 		} catch {
+			logger.warning("failed to decode response from compute: \(type(of: error)): \(error)// \(String(data: data, encoding: .utf8)!)")
 			let path = "/tmp/badParse." + UUID().uuidString
 			logger.info("writing message to \(path)")
 			try! data.write(to: URL(fileURLWithFileSystemRepresentation: path, isDirectory: false, relativeTo: nil))
-			logger.warning("failed to decode response from compute: \(error)// \(String(data: data, encoding: .utf8)!)")
+
 		}
 	}
 	
@@ -434,7 +437,6 @@ extension Session {
 
 	/// converts updatePreview compute response to a SessionResponse
 	func handlePreviewUpdated(data: ComputeResponse.PreviewUpdated) {
-		logger.info("handling preview update")
 		let value = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, updateIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
 		broadcastToAllClients(object: value)
 	}
