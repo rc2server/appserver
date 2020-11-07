@@ -13,7 +13,7 @@ import Logging
 fileprivate let logger = Logger(label: "rc2.ComputeResponse")
 
 /// responses that can be returned by the comppute engine
-public enum ComputeResponse: Equatable {
+public enum ComputeResponse: Equatable, Codable {
 
 	case open(Open)
 	case help(Help)
@@ -26,7 +26,21 @@ public enum ComputeResponse: Equatable {
 	case envCreated(EnvCreated)
 	case previewInited(PreviewInited)
 	case previewUpdated(PreviewUpdated)
-	
+
+	private enum CodingKeys: String, CodingKey {
+		case open
+		case help
+		case variableValue
+		case variableUpdate
+		case error
+		case results
+		case showOutput
+		case execComplete
+		case envCreated
+		case previewInited
+		case previewUpdated
+	}
+
 	init(messageType: String, jsonData: Data, decoder: JSONDecoder) throws {
 		do {
 			switch messageType {
@@ -71,7 +85,67 @@ public enum ComputeResponse: Equatable {
 			throw error
 		}
 	}
+
+	/// implementation of Decodable
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		if let params = try? container.decode(Open.self, forKey: .open) {
+			self = .open(params)
+		} else if let params = try? container.decode(Help.self, forKey: .help) {
+			self = .help(params)
+		} else if let params = try? container.decode(VariableValue.self, forKey: .variableValue) {
+			self = .variableValue(params)
+		} else if let params = try? container.decode(VariableUpdate.self, forKey: .variableUpdate) {
+			self = .variableUpdate(params)
+		} else if let params = try? container.decode(Error.self, forKey: .error) {
+			self = .error(params)
+		} else if let params = try? container.decode(Results.self, forKey: .results) {
+			self = .results(params)
+		} else if let params = try? container.decode(ShowOutput.self, forKey: .showOutput) {
+			self = .showOutput(params)
+		} else if let params = try? container.decode(ExecComplete.self, forKey: .execComplete) {
+			self = .execComplete(params)
+		} else if let params = try? container.decode(EnvCreated.self, forKey: .envCreated) {
+			self = .envCreated(params)
+		} else if let params = try? container.decode(PreviewInited.self, forKey: .previewInited) {
+			self = .previewInited(params)
+		} else if let params = try? container.decode(PreviewUpdated.self, forKey: .previewUpdated) {
+			self = .previewUpdated(params)
+		} else {
+			logger.warning("failed to parse a SessionCommand")
+			throw SessionError.decoding
+		}
+	}
 	
+	/// implementation of Encodable
+	public func encode(to encoder: Encoder) throws {
+		var container = encoder.container(keyedBy: CodingKeys.self)
+		switch self {
+			case .open(let params):
+				try container.encode(params, forKey: .open)
+			case .help(let params):
+				try container.encode(params, forKey: .help)
+			case .variableValue(let params):
+				try container.encode(params, forKey: .variableValue)
+			case .variableUpdate(let params):
+				try container.encode(params, forKey: .variableUpdate)
+			case .error(let params):
+				try container.encode(params, forKey: .error)
+			case .results(let params):
+				try container.encode(params, forKey: .results)
+			case .showOutput(let params):
+				try container.encode(params, forKey: .showOutput)
+			case .execComplete(let params):
+				try container.encode(params, forKey: .execComplete)
+			case .envCreated(let params):
+				try container.encode(params, forKey: .envCreated)
+			case .previewInited(let params):
+				try container.encode(params, forKey: .previewInited)
+			case .previewUpdated(let params):
+				try container.encode(params, forKey: .previewUpdated);
+		}
+	}
+
 	/// response from an open message
 	public struct Open: Codable, Hashable {
 		/// was the connection opened
@@ -119,7 +193,7 @@ public enum ComputeResponse: Equatable {
 	}
 
 	/// response frpm a list variables command, also sent when there are changes if the client is watching for changes
-	public struct VariableUpdate: Decodable, Equatable {
+	public struct VariableUpdate: Codable, Equatable {
 		/// if true, only added and removed will be valid. Otherwise, variables will be valid
 		let delta: Bool
 		/// the variables
@@ -228,7 +302,7 @@ public enum ComputeResponse: Equatable {
 		}
 	}
 
-	public struct ExecComplete: Decodable, Hashable {
+	public struct ExecComplete: Codable, Hashable {
 		let expectShowOutput: Bool
 		let queryId: Int
 		let startTime: String?
