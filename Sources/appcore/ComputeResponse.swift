@@ -72,10 +72,11 @@ public enum ComputeResponse: Equatable, Codable {
 			case "previewInited":
 				let rsp = try decoder.decode(PreviewInited.self, from: jsonData)
 				self = .previewInited(rsp)
-			case "updatePreview":
+			case "previewUpdated":
 				let rsp = try decoder.decode(PreviewUpdated.self, from: jsonData)
 				self = .previewUpdated(rsp)
 			default:
+				logger.warning("unknown msg: \(messageType)")
 				throw ComputeError.invalidInput
 			}
 		} catch let error where error is ComputeError {
