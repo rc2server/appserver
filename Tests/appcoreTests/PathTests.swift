@@ -22,13 +22,13 @@ final class PathTests: BaseTest {
 			var info: BulkUserInfo?
 			do {
 				let _ = try response.readAllData(into: &data)
-			XCTAssertNoThrow(info = try PathTests.app?.settings.decode(BulkUserInfo.self, from: data))
-			XCTAssertEqual(BaseTest.user?.id, info?.user.id)
+				XCTAssertNoThrow(info = try PathTests.app?.settings.decode(BulkUserInfo.self, from: data))
+				XCTAssertEqual(BaseTest.user?.id, info?.user.id)
 			} catch {
-				XCTFail()
+				XCTFail("failed to read data")
 			}
 		}
-		waitForExpectations(timeout: 1, handler: nil)
+		waitForExpectations(timeout: 3, handler: nil)
 	}	
 
 }

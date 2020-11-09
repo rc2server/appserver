@@ -36,7 +36,7 @@ class BaseTest: XCTestCase {
 			let httpServer = Kitura.addHTTPServer(onPort: testPort, with: router)
 			try httpServer.setEventLoopGroup(evGroup)
 			Kitura.start()
-			user = try app.dao.getUser(login: "rc2")
+			user = try app.dao.getUser(login: "login2")
 			guard let myUser = user else { fatalError("failed to find user") }
 			userInfo = try app.dao.getUserInfo(user: myUser)
 			guard let myInfo = userInfo else { fatalError("failed to find user info") }
@@ -85,6 +85,7 @@ class BaseTest: XCTestCase {
 				return
 			}
 			callback(response)
+			expectation.fulfill()
 		}
 		if let requestModifier = requestModifier {
 			requestModifier(req)
