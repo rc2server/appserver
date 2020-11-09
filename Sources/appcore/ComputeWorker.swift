@@ -92,6 +92,7 @@ public class ComputeWorker {
 	}
 	
 	public func send(data: Data) throws {
+		guard data.count > 0 else { throw ComputeError.sendingEmptyMessage }
 		guard state == .connected, let socket = socket, socket.isConnected else { throw ComputeError.notConnected }
 		var headBytes = [UInt8](repeating: 0, count: 8)
 		headBytes.replaceSubrange(0...3, with: valueByteArray(UInt32(0x21).byteSwapped))

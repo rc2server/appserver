@@ -16,6 +16,8 @@ public enum ComputeError: Error {
 	case failedToReadMessage
 	/// failed to write data to network. Should be very rare.
 	case failedToWrite
+	/// asked to send data of length zero
+	case sendingEmptyMessage
 	/// a required field was missing from the server. Should never happen. Input was ignored
 	case requiredFieldMissing
 	/// the input passed to the coder was not in the propper format
