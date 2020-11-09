@@ -99,7 +99,9 @@ class Session {
 		// see if can stop watching variables
 		if watchingVariables && !connections.map({ $0.watchingVariables}).contains(true) {
 			do {
-				try worker?.send(data: coder.toggleVariableWatch(enable: false, contextId: nil))
+				let msgData = try coder.toggleVariableWatch(enable: false, contextId: nil)
+				if msgData.count < 1 { logger.info(".removed sending empty data") }
+				try worker?.send(data: msgData)
 			} catch {
 				logger.warning("error disabling variable watch: \(error)")
 			}
@@ -297,6 +299,7 @@ extension Session: ComputeWorkerDelegate {
 				let message = try coder.openConnection(wspaceId: workspace.id, sessionId: sessionId!, dbhost: settings.config.computeDbHost, dbPort: settings.config.computeDbPort,
 					dbuser: settings.config.dbUser, dbname: settings.config.dbName,
 					dbpassword: settings.config.dbPassword)
+				if message.count < 1 { logger.info(".connected sending empty data") }
 				try worker!.send(data: message)
 			} catch {
 				logger.error("failed to send open connection message: \(error)")
@@ -468,6 +471,7 @@ extension Session {
 			let data = try coder.executeScript(transactionId: params.transactionId, script: params.source)
 			lock.wait()
 			defer { lock.signal() }
+			if data.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: data)
 		} catch {
 			logger.info("error handling execute \(error.localizedDescription)")
@@ -480,6 +484,7 @@ extension Session {
 			let data = try coder.executeFile(transactionId: params.transactionId, fileId: params.fileId, fileVersion: params.fileVersion)
 			lock.wait()
 			defer { lock.signal() }
+			if data.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: data)
 		} catch {
 			logger.warning("error handling execute file: \(error)")
@@ -519,6 +524,7 @@ extension Session {
 	private func handleCreateEnvironment(transId: String, parentId: Int, variableName: String?) {
 		do {
 			let data = try coder.createEnvironment(transactionId: transId, parentId: parentId, varName: variableName)
+			if data.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: data)
 		} catch {
 			logger.warning("error sending create environment: \(error)")
@@ -528,6 +534,7 @@ extension Session {
 	private func handleClearEnvironment(id: Int) {
 		do {
 			let data = try coder.clearEnvironment(id: id)
+			if data.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: data)
 		} catch {
 			logger.warning("error clearing environment: \(error)")
@@ -536,8 +543,9 @@ extension Session {
 
 	private func handleHelp(topic: String, connection: SessionConnection) {
 		do {
-			let data = try? coder.help(topic: topic)
-			try worker?.send(data: data!)
+			guard let data = try? coder.help(topic: topic) else { throw SessionError.encoding }
+			if data.count < 1 { logger.info("sending empty data") }
+			try worker?.send(data: data)
 		} catch {
 			logger.warning("error sending help message: \(error)")
 		}
@@ -545,7 +553,8 @@ extension Session {
 
 	private func handleGetVariable(params: SessionCommand.VariableParams, connnection: SessionConnection) {
 		do {
-			let cmd = try coder.getVariable(name: params.name, contextId: params.environmentId, clientIdentifier: connnection.id)
+			guard let cmd = try? coder.getVariable(name: params.name, contextId: params.environmentId, clientIdentifier: connnection.id) else { throw SessionError.encoding }
+			if cmd.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: cmd)
 		} catch {
 			logger.warning("error getting variable: \(error)")
@@ -565,6 +574,7 @@ extension Session {
 				// ask for updated values
 				cmd = try coder.listVariables(deltaOnly: false, contextId: params.environmentId)
 			}
+			if cmd.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: cmd)
 			watchingVariables = shouldWatch
 		} catch {
@@ -600,6 +610,7 @@ extension Session {
 		logger.info("handleInitPreview called")
 		do {
 			let cmd = try coder.initPreview(fileId: updateData.fileId, updateIdentifier: updateData.updateIdentifier)
+			if cmd.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: cmd)
 		} catch {
 			logger.warning("error initing preview: \(error)")
@@ -610,6 +621,7 @@ extension Session {
 		logger.info("uandle update preview called")
 		do {
 			let cmd = try coder.updatePreview(previewId: updateData.previewId, chunkNumber: updateData.chunkId, includePrevious: updateData.includePrevious)
+			if cmd.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: cmd)
 		} catch {
 			logger.warning("error geupdating preview: \(error)")
@@ -619,6 +631,7 @@ extension Session {
 	private func handleRemovePreview(previewId: Int) {
 		do {
 			let cmd = try coder.removePreview(previewId: previewId)
+			if cmd.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: cmd)
 		} catch {
 			logger.warning("error removing preview: \(error)")
