@@ -310,7 +310,7 @@ extension Session: ComputeWorkerDelegate {
 		}
 		if let status = clientUpdate {
 			// inform clients that status changed
-			logger.info("sending compute status \(status)")
+			logger.debug("sending compute status \(status)")
 			broadcastToAllClients(object: SessionResponse.computeStatus(status))
 		}
 	}

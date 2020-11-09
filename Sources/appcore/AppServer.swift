@@ -70,9 +70,9 @@ public class App {
 		router.decoders[.json] = { AppSettings.createJSONDecoder() }
 		// connect to database
 		for i in 0..<settings.config.dbConnectAttemptCount {
-			print("attempting connection \(i)")
+			logger.debug("attempting connection \(i)")
 			if connectToDB() {
-				logger.info("connection opened")
+				logger.debug("connection opened")
 				break
 			}
 			sleep(UInt32(settings.config.dbConnectAttemptDelay))

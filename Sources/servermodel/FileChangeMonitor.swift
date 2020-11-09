@@ -49,7 +49,7 @@ class FileChangeMonitor {
 	}
 
 	func add(wspaceId: Int, observer: @escaping Observer) {
-		logger.info("adding file observer for workspace \(wspaceId)")
+		logger.debug("adding file observer for workspace \(wspaceId)")
 		observers.append((wspaceId, observer))
 	}
 

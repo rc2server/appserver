@@ -126,9 +126,9 @@ public class ComputeWorker {
 			socket = try Socket.create()
 			socket?.readBufferSize = 32768 // 32 KB
 			let port = Int32(config.computePort) //kitura uses Int32 for legacy purposes
-			logger.info("compute connectding to \(config.computeHost):\(port)")
+			logger.debug("compute connectding to \(config.computeHost):\(port)")
 			try socket?.connect(to: config.computeHost, port: port)
-			logger.info("compute worker socket open")
+			logger.debug("compute worker socket open")
 			self.state = .connected
 			readQueue.async { [weak self] in
 				self?.readNext()
@@ -187,7 +187,7 @@ public class ComputeWorker {
 			// pass along a Data w/o copying the memory
 			let rawPtr = UnsafeMutableRawPointer(readBuffer)
 			let tmpData = Data(bytesNoCopy: rawPtr, count: sizeRead, deallocator: .none)
-			logger.info("read from compute: \(tmpData)")
+			logger.debug("read from compute: \(tmpData)")
 			readQueue.sync {
 				self.delegate?.handleCompute(data: tmpData)
 			}
