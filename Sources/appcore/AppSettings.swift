@@ -50,8 +50,9 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		return try decoder.decode(AppConfiguration.self, from: data)
 	}
 	
-	/// Initializes from parameters and `config.json`
-	/// Initializes from parameters and `config.json`
+	/// Initializes from json configuration file
+	///
+	///	If the environment variable RC2_CONFIG_FILE_NAME is set, that name will be used instead of "config.json"
 	///
 	/// - Parameter dataDirURL: URL containing resources used by the application.
 	/// - Parameter configData: JSON data for configuration. If nil, will read it from dataDirURL.
@@ -68,7 +69,14 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 			let configFileName = ProcessInfo.processInfo.environment["RC2_CONFIG_FILE_NAME"] ?? "config.json"
 			configUrl = inURL.appendingPathComponent(configFileName)
 			let data = configData != nil ? configData! : try Data(contentsOf: configUrl)
-			config = try AppSettings.loadConfig(from: data, with: decoder)
+			var cfg = try AppSettings.loadConfig(from: data, with: decoder)
+			if ProcessInfo.processInfo.environment["RC2_LOG_CLIENT_IN"] != nil {
+				cfg.logClientIncoming = true
+			}
+			if ProcessInfo.processInfo.environment["RC2_LOG_CLIENT_OUT"] != nil {
+				cfg.logClientOutgoing = true
+			}
+			config = cfg
 		} catch {
 			fatalError("failed to load config file \(configUrl.absoluteString) \(error)")
 		}
@@ -118,7 +126,7 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 }
 
 
-/// Basic information used throughout the application. Meant to be read from config file.
+/// Settings used throughout the application. Read from a config file.
 public struct AppConfiguration: Decodable {
 	/// The database host name to connect to. Defaults to "dbserver".
 	public let dbHost: String
@@ -166,6 +174,10 @@ public struct AppConfiguration: Decodable {
 	public let sessionReapDelay: Int
 	/// How long to wait for compute pod to complete startup after confirmation message. Defaults to 2000 milliseconds
 	public let computeStartupDelay: Int
+	/// Should all JSON sent to a client be logged
+	public internal(set) var logClientOutgoing: Bool
+	/// Should all JSON received from a client be logged
+	public internal(set) var logClientIncoming: Bool
 	
 	enum CodingKeys: String, CodingKey {
 		case dbHost
@@ -191,6 +203,8 @@ public struct AppConfiguration: Decodable {
 		case computeImage
 		case sessionReapDelay
 		case computeStartupDelay
+		case logClientOutgoing
+		case logClientIncoming
 	}
 	
 	/// Initializes from serialization.
@@ -215,6 +229,9 @@ public struct AppConfiguration: Decodable {
 		k8sStencilPath = try container.decodeIfPresent(String.self, forKey: .k8sStencilPath) ?? "/rc2/k8s-templates"
 		computeImage = try container.decodeIfPresent(String.self, forKey: .computeImage) ?? "docker.rc2.io/compute:latest"
 		computeDbPort = try container.decodeIfPresent(String.self, forKey: .computeDbPort) ?? "5432"
+		logClientIncoming = try container.decodeIfPresent(Bool.self, forKey: .logClientIncoming) ?? false
+		logClientOutgoing = try container.decodeIfPresent(Bool.self, forKey: .logClientOutgoing) ?? false
+
 		let cdb = try container.decodeIfPresent(String.self, forKey: .computeDbHost)
 		computeDbHost = cdb == nil ? dbHost : cdb!
 		computeStartupDelay = try container.decodeIfPresent(Int.self, forKey: .computeStartupDelay) ?? 2000

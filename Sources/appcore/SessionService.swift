@@ -142,10 +142,11 @@ class SessionService: WebSocketService, Hashable {
 	}
 	
 	func received(message: Data, from: WebSocketConnection) {
-		let debugStr = String(data: message, encoding: .utf8) ?? "huh?"
-		print(debugStr)
-		logger.warning("ws got message: \(debugStr)")
 		guard message.count > 1 else { return } // json needs {} at minimum, 1 char meesage likely newline
+		if settings.config.logClientIncoming {
+			let incoming = String(data: message, encoding: .utf8) ?? "huh?"
+			logger.info("client >> appserver\n\(incoming)")
+		}
 		guard let sconnection = connections[from.id],
 			let session = session(for: from) else {
 			logger.warning("failed to get session for source of message")

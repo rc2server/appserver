@@ -45,6 +45,9 @@ final class SessionConnection: Hashable {
 	}
 
 	func send(data: Data) throws {
+		if settings.config.logClientOutgoing {
+			logger.info("appserver >> client\n\(String(data: data, encoding: .utf8) ?? "<bogus>")")
+		}
 		lock.wait()
 		defer { lock.signal() }
 		socket?.send(message: data)

@@ -114,7 +114,7 @@ public enum ComputeResponse: Equatable, Codable {
 			self = .previewUpdated(params)
 		} else {
 			logger.warning("failed to parse a SessionCommand")
-			throw SessionError.decoding
+			throw SessionError.decoding("failed to parse session command")
 		}
 	}
 	

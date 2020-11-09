@@ -543,21 +543,23 @@ extension Session {
 
 	private func handleHelp(topic: String, connection: SessionConnection) {
 		do {
-			guard let data = try? coder.help(topic: topic) else { throw SessionError.encoding }
+			let data = try coder.help(topic: topic)
 			if data.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: data)
 		} catch {
-			logger.warning("error sending help message: \(error)")
+			logger.warning("failure sending help message: \(error.localizedDescription)")
+			return
 		}
 	}
 
 	private func handleGetVariable(params: SessionCommand.VariableParams, connnection: SessionConnection) {
 		do {
-			guard let cmd = try? coder.getVariable(name: params.name, contextId: params.environmentId, clientIdentifier: connnection.id) else { throw SessionError.encoding }
-			if cmd.count < 1 { logger.info("sending empty data") }
-			try worker?.send(data: cmd)
+			let data = try coder.getVariable(name: params.name, contextId: params.environmentId, clientIdentifier: connnection.id) 
+			if data.count < 1 { logger.info("sending empty data") }
+			try worker?.send(data: data)
 		} catch {
-			logger.warning("error getting variable: \(error)")
+			logger.warning("failure sending getting variable: \(error.localizedDescription)")
+			return
 		}
 	}
 	
