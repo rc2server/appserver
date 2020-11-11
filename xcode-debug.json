@@ -1,0 +1,8 @@
+{
+	"dbHost": "localhost",
+	"dbPort": 5434,
+	"computeHost": "localhost",
+	"computeTimeout": 4,
+	"computeDbHost": "host.docker.internal",
+	"computeDbPort": "5434"
+}
