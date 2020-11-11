@@ -626,7 +626,7 @@ extension Session {
 			if cmd.count < 1 { logger.info("sending empty data") }
 			try worker?.send(data: cmd)
 		} catch {
-			logger.warning("error geupdating preview: \(error)")
+			logger.warning("error updating preview: \(error)")
 		}
 	}
 	
