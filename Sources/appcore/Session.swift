@@ -440,7 +440,8 @@ extension Session {
 
 	/// converts updatePreview compute response to a SessionResponse
 	func handlePreviewUpdated(data: ComputeResponse.PreviewUpdated) {
-		let value = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, updateIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
+		let obj = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, updateIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)
+		let value = SessionResponse.previewUpdated(obj)
 		broadcastToAllClients(object: value)
 	}
 }
