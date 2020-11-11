@@ -36,8 +36,8 @@ class BaseHandler {
 	///   - error: The error to report
 	///   - response: The response to report the error to
 	/// - Throws: any errors from response.send().end()
-	func handle(error: SessionError, response: RouterResponse) throws {
-		response.status(.notFound)
+	func handle(error: SessionError, response: RouterResponse, statusCode: HTTPStatusCode = .notFound) throws {
+		response.status(statusCode)
 		response.headers.setType(jsonMediaType.description)
 		try response.send(error).end()
 	}
