@@ -1,0 +1,7 @@
+{
+	"dbHost": "localhost",
+	"dbPort": 5434,
+	"computeHost": "localhost",
+	"computeTimeout": 4,
+	"computeDbHost": "dbserver"
+}
