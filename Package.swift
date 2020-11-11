@@ -46,8 +46,7 @@ let package = Package(
 			 .product(name: "Logging", package: "swift-log"), "SwiftJWT"]),
         .testTarget(
             name: "kappserverTests",
-            dependencies: ["kappserver", "appcoreTests", "servermodelTests",
-			]),
+            dependencies: ["kappserver"]),
         .testTarget(
             name: "appcoreTests",
             dependencies: ["appcore", "SwiftyJSON",
