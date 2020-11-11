@@ -22,6 +22,12 @@ The following environment variables can be used to override the config file:
 	<dd>If set, all JSON sent to the cient will be logged</dd>
 </dl>
 
+## working with Xcode
+
+Xcode will not work by opening Package.swift. Instead, use `swift package generate-xcodeproj`. Open it, then edit the schema. Add `-p 3415` to arguments, and `RC2_CONFIG_FILE_NAME = xcode-debug.json` to environment variables. 
+
+Start the dbserver and compute using `docker-compose -f compose-xcode.yml up` from the rc2root/containers directory.
+
 ## db setup
 
 if rcuser is empty, run `psql -c "select rc2CreateUser('local', 'Local', 'Account', 'singlesignin@rc2.io', 'local');"` This does not apply if testing with docker
