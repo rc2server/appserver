@@ -59,7 +59,7 @@ class AuthHandler: BaseHandler {
 			handler()
 		} catch {
 			do {
-				try handle(error: .unknown, response: response)
+				try handle(error: .invalidLogin, response: response, statusCode: .unprocessableEntity)
 			} catch {
 				logger.error("error handling an error")
 				response.status(.internalServerError)
