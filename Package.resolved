@@ -6,13 +6,13 @@
         "repositoryURL": "https://github.com/rc2server/appmodelSwift.git",
         "state": {
           "branch": null,
-          "revision": "4ffcf613992c681e4e0947da4d81768f87e30495",
-          "version": "0.2.4"
+          "revision": "3002d14136c3ddeb8833324facf6faba83a4c9b8",
+          "version": "0.2.6"
         }
       },
       {
         "package": "Cryptor",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueCryptor.git",
+        "repositoryURL": "https://github.com/Kitura/BlueCryptor.git",
         "state": {
           "branch": null,
           "revision": "ee5880e031da4c609f372cf7472476ab51d5dd19",
@@ -21,7 +21,7 @@
       },
       {
         "package": "CryptorECC",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueECC.git",
+        "repositoryURL": "https://github.com/Kitura/BlueECC.git",
         "state": {
           "branch": null,
           "revision": "baf6ed3fc1a622675f0041b4aff7c02dd1a93818",
@@ -30,7 +30,7 @@
       },
       {
         "package": "CryptorRSA",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueRSA.git",
+        "repositoryURL": "https://github.com/Kitura/BlueRSA.git",
         "state": {
           "branch": null,
           "revision": "c885fcdbe1b04718cb46d747387137653c030f6c",
@@ -96,17 +96,8 @@
         "repositoryURL": "https://github.com/Kitura/Kitura.git",
         "state": {
           "branch": null,
-          "revision": "bbb7462ac3d422cad4480a57ddbd33263c381a7b",
-          "version": "2.9.1"
-        }
-      },
-      {
-        "package": "Kitura-net",
-        "repositoryURL": "https://github.com/IBM-Swift/Kitura-net.git",
-        "state": {
-          "branch": null,
-          "revision": "8ac1efdfcc807345cdd77ccdd8816923ddf2778d",
-          "version": "2.4.1"
+          "revision": "daf6479097469a0c1fe64755db6e23f788a3ec29",
+          "version": "2.9.200"
         }
       },
       {
@@ -120,7 +111,7 @@
       },
       {
         "package": "Kitura-TemplateEngine",
-        "repositoryURL": "https://github.com/IBM-Swift/Kitura-TemplateEngine.git",
+        "repositoryURL": "https://github.com/Kitura/Kitura-TemplateEngine.git",
         "state": {
           "branch": null,
           "revision": "1670b09bfb63b66f7dffff627a06b50492485407",
@@ -147,11 +138,11 @@
       },
       {
         "package": "KituraContracts",
-        "repositoryURL": "https://github.com/IBM-Swift/KituraContracts.git",
+        "repositoryURL": "https://github.com/Kitura/KituraContracts.git",
         "state": {
           "branch": null,
-          "revision": "a30e2fb79e926672776a05ec6b919c239870a221",
-          "version": "1.2.1"
+          "revision": "8418006e39e2efae9b31ae92721cb597ac29c617",
+          "version": "1.2.200"
         }
       },
       {
@@ -168,8 +159,8 @@
         "repositoryURL": "https://github.com/mlilback/pgswift.git",
         "state": {
           "branch": null,
-          "revision": "6869a19d1dab2a7b92a1853088a79b75b9fa4283",
-          "version": "0.1.0"
+          "revision": "a7f4df2901bc263f507d2d9832f8ab948cb0b38f",
+          "version": "0.1.1"
         }
       },
       {
@@ -186,8 +177,8 @@
         "repositoryURL": "https://github.com/Kitura/Swift-JWT.git",
         "state": {
           "branch": null,
-          "revision": "0d435423d12e61c0d14adb6d04396c08a6a650f1",
-          "version": "3.6.1"
+          "revision": "2f2fc12ae88660e0760b04d9e6c341517b31ad7b",
+          "version": "3.6.200"
         }
       },
       {
@@ -195,8 +186,8 @@
         "repositoryURL": "https://github.com/apple/swift-log.git",
         "state": {
           "branch": null,
-          "revision": "e8aabbe95db22e064ad42f1a4a9f8982664c70ed",
-          "version": "1.1.1"
+          "revision": "173f567a2dfec11d74588eea82cecea555bdc0bc",
+          "version": "1.4.0"
         }
       },
       {
@@ -237,7 +228,7 @@
       },
       {
         "package": "TypeDecoder",
-        "repositoryURL": "https://github.com/IBM-Swift/TypeDecoder.git",
+        "repositoryURL": "https://github.com/Kitura/TypeDecoder.git",
         "state": {
           "branch": null,
           "revision": "a5978582981f7151594bdaf5fe0d3cd9b1d2d0c0",

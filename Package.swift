@@ -6,10 +6,10 @@ import PackageDescription
 let package = Package(
     name: "kappserver",
 	platforms: [
-		.macOS(.v10_13)
+		.macOS(.v10_14)
 	],
     dependencies: [
-		.package(name: "Rc2Model", url: "https://github.com/rc2server/appmodelSwift.git", from: "0.2.4"),
+		.package(name: "Rc2Model", url: "https://github.com/rc2server/appmodelSwift.git", from: "0.2.6"),
         .package(url: "https://github.com/Kitura/Kitura.git", from: "2.9.0"),
         .package(name: "KituraWebSocket", url: "https://github.com/Kitura/Kitura-WebSocket-NIO.git", from: "2.1.200"),
 		.package(name: "SwiftJWT", url: "https://github.com/Kitura/Swift-JWT.git", from: "3.5.3"),

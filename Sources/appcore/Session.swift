@@ -239,6 +239,8 @@ extension Session: ComputeWorkerDelegate {
 				handleInitPreviewResponse(data: previewData)
 			case .previewUpdated(let data):
 				handlePreviewUpdated(data: data)
+			case .previewUpdateStarted(let data):
+				handlePreviewStarted(data: data)
 			}
 		} catch let error as ComputeError {
 			logger.warning("got compute error: \(error.localizedDescription)")
@@ -438,6 +440,13 @@ extension Session {
 		broadcastToAllClients(object: value)
 	}
 
+	/// coverts updatePreviewStarted compute resonse to a SessionResponse
+	func handlePreviewStarted(data: ComputeResponse.PreviewUpdateStartedData) {
+		let obj = SessionResponse.PreviewUpdateStartedData(previewId: data.previewId, updateIdentifier: data.updateIdentifier, activeChunks: data.activeChunks)
+		let value = SessionResponse.previewUpdateStarted(obj)
+		broadcastToAllClients(object: value)
+	}
+	
 	/// converts updatePreview compute response to a SessionResponse
 	func handlePreviewUpdated(data: ComputeResponse.PreviewUpdated) {
 		let obj = SessionResponse.PreviewUpdateData(previewId: data.previewId, chunkId: data.chunkId, updateIdentifier: data.updateIdentifier, results: data.results, updateComplete: data.updateComplete)

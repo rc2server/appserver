@@ -26,6 +26,7 @@ public enum ComputeResponse: Equatable, Codable {
 	case envCreated(EnvCreated)
 	case previewInited(PreviewInited)
 	case previewUpdated(PreviewUpdated)
+	case previewUpdateStarted(PreviewUpdateStartedData)
 
 	private enum CodingKeys: String, CodingKey {
 		case open
@@ -39,6 +40,7 @@ public enum ComputeResponse: Equatable, Codable {
 		case envCreated
 		case previewInited
 		case previewUpdated
+		case previewUpdateStarted
 	}
 
 	init(messageType: String, jsonData: Data, decoder: JSONDecoder) throws {
@@ -72,6 +74,9 @@ public enum ComputeResponse: Equatable, Codable {
 			case "previewInited":
 				let rsp = try decoder.decode(PreviewInited.self, from: jsonData)
 				self = .previewInited(rsp)
+			case "previewUpdateStarted":
+				let rsp = try decoder.decode(PreviewUpdateStartedData.self, from: jsonData)
+				self = .previewUpdateStarted(rsp)
 			case "previewUpdated":
 				let rsp = try decoder.decode(PreviewUpdated.self, from: jsonData)
 				self = .previewUpdated(rsp)
@@ -112,6 +117,8 @@ public enum ComputeResponse: Equatable, Codable {
 			self = .previewInited(params)
 		} else if let params = try? container.decode(PreviewUpdated.self, forKey: .previewUpdated) {
 			self = .previewUpdated(params)
+		} else if let params = try? container.decode(PreviewUpdateStartedData.self, forKey: .previewUpdateStarted) {
+			self = .previewUpdateStarted(params)
 		} else {
 			logger.warning("failed to parse a SessionCommand")
 			throw SessionError.decoding("failed to parse session command")
@@ -144,6 +151,8 @@ public enum ComputeResponse: Equatable, Codable {
 				try container.encode(params, forKey: .previewInited)
 			case .previewUpdated(let params):
 				try container.encode(params, forKey: .previewUpdated);
+		case .previewUpdateStarted(let params):
+			try container.encode(params, forKey: .previewUpdateStarted)
 		}
 	}
 
@@ -343,6 +352,12 @@ public enum ComputeResponse: Equatable, Codable {
 		public let updateIdentifier: String
 	}
 	
+	public struct PreviewUpdateStartedData: Codable, Hashable {
+		public let previewId: Int
+		public let updateIdentifier: String
+		public let activeChunks: [Int]
+	}
+
 	public struct PreviewUpdated: Codable, Hashable , Equatable{
 		public let previewId: Int
 		public let chunkId: Int
