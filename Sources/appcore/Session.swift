@@ -614,7 +614,7 @@ extension Session {
 			logger.warning("unknown error saving file: \(error)")
 			serror = SessionError.unknown
 		}
-		let responseData = SessionResponse.SaveData(transactionId: params.transactionId, success: serror != nil, file: updatedFile, error: serror)
+		let responseData = SessionResponse.SaveData(transactionId: params.transactionId, success: serror == nil, file: updatedFile, error: serror)
 		broadcastToAllClients(object: SessionResponse.save(responseData))
 	}
 	

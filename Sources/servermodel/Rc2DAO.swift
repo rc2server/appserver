@@ -456,6 +456,7 @@ open class Rc2DAO {
 						   try QueryParameter(type: .int8, value: fileId, connection: pgdb) ]
 			let vresults = try pgdb.execute(query: "select id from rcfile where version = $1 and id = $2", parameters: vparams)
 			guard vresults.wasSuccessful, vresults.rowCount == 1 else {
+				logger.warning("versionMismatch saving file to database \(fileId):\(version)")
 				throw DBError.versionMismatch
 			}
 		}
