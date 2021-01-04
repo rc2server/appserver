@@ -50,9 +50,6 @@ class Session {
 			throw error
 		}
 		try createWorker(k8sServer: k8sServer)
-		worker = ComputeWorker(wspaceId: workspace.id, sessionId: sessionId, k8sServer: k8sServer, config: settings.config, logger: logger, delegate: self, queue: .global())
-		try worker!.start()
-		try settings.dao.addFileChangeObserver(wspaceId: workspace.id, callback: handleFileChanged(data:))
 	}
 	
 	/// allows testing subclass to override
