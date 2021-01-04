@@ -619,7 +619,7 @@ extension Session {
 	}
 	
 	private func handleInitPreview(updateData: SessionCommand.InitPreviewParams) {
-		logger.info("handleInitPreview called")
+		logger.info("handleInitPreview called: \(updateData.updateIdentifier)")
 		do {
 			let cmd = try coder.initPreview(fileId: updateData.fileId, updateIdentifier: updateData.updateIdentifier)
 			if cmd.count < 1 { logger.info("sending empty data") }
@@ -630,7 +630,7 @@ extension Session {
 	}
 
 	private func handleUpdatePreview(updateData: SessionCommand.UpdatePreviewParams) {
-		logger.info("uandle update preview called")
+		logger.info("handle update preview called: \(updateData.updateIdentifier)")
 		do {
 			let cmd = try coder.updatePreview(previewId: updateData.previewId, chunkNumber: updateData.chunkId, includePrevious: updateData.includePrevious)
 			if cmd.count < 1 { logger.info("sending empty data") }

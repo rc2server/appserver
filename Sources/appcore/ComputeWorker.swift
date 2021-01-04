@@ -159,6 +159,7 @@ public class ComputeWorker {
 		defer { lock.signal() }
 		// in any other case, we'll want to read again
 		defer { readQueue.async { [weak self] in self?.readNext() } }
+		// read our magic header
 		let header = UnsafeMutablePointer<CChar>.allocate(capacity: 8)
 		defer { header.deallocate() }
 		header.initialize(repeating: 0, count: 8)
@@ -174,6 +175,8 @@ public class ComputeWorker {
 				return
 			}
 			guard readCount == 8 else {
+				// this could only happen if we connected to an invalid server.
+				// TODO: abort this worker
 				logger.error("failed to read magic header: \(readCount)")
 				return
 			}
