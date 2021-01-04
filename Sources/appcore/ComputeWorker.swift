@@ -33,6 +33,11 @@ public enum ComputeState: Int, CaseIterable {
 
 /// encapsulates all communication with the compute engine
 public class ComputeWorker {
+	static func create(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?) -> ComputeWorker
+	{
+		return ComputeWorker(wspaceId: wspaceId, sessionId: sessionId, config: config, logger: logger, delegate: delegate, queue: queue)
+	}
+	
 	let logger: Logger
 	let config: AppConfiguration
 	let wspaceId: Int
@@ -50,7 +55,7 @@ public class ComputeWorker {
 	}
 	private var podFailureCount = 0
 	
-	init(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?)
+	private init(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?)
 	{
 		self.logger = logger
 		self.config = config
