@@ -12,6 +12,7 @@ import Rc2Model
 import servermodel
 import Kitura
 import KituraWebSocket
+import NIO
 
 class Session {
 	var logger: Logger
@@ -54,7 +55,7 @@ class Session {
 	
 	/// allows testing subclass to override
 	func createWorker(k8sServer: K8sServer? = nil) throws {
-		worker = ComputeWorker.create(wspaceId: workspace.id, sessionId: sessionId, k8sServer: k8sServer, config: settings.config, logger: logger, delegate: self, queue: .global())
+		worker = ComputeWorker.create(wspaceId: workspace.id, sessionId: sessionId, k8sServer: k8sServer, eventGroup: settings.nioGroup!, config: settings.config, logger: logger, delegate: self, queue: .global())
 		try worker!.start()
 		try settings.dao.addFileChangeObserver(wspaceId: workspace.id, callback: handleFileChanged(data:))
 	}

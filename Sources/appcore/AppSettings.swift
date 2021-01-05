@@ -10,6 +10,7 @@ import servermodel
 import Logging
 import KituraContracts
 import SwiftJWT
+import NIO
 
 public class AppSettings: BodyEncoder, BodyDecoder {
 	let logger = Logger(label: "AppSettings")
@@ -23,6 +24,8 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 	private let encoder: JSONEncoder
 	/// the decoder used, implementation detail.
 	private let decoder: JSONDecoder
+	/// the swift-nio event loop group being used. can only be set once, should be done via AppServer
+	public private(set) var nioGroup: EventLoopGroup?
 	let jwtSigner:  JWTSigner
 	let jwtVerifier: JWTVerifier
 
@@ -114,6 +117,11 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		dao = newDao
 	}
 
+	func set(nioGroup: EventLoopGroup) {
+		guard self.nioGroup == nil else { fatalError("can't set event loop group twice") }
+		self.nioGroup = nioGroup
+	}
+	
 	/// implementation for Kitura so we can configure the encoder
 	public func encode<T : Encodable>(_ value: T) throws -> Data {
 		return try encoder.encode(value)

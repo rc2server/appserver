@@ -8,6 +8,7 @@
 import Foundation
 import Logging
 import Socket
+import NIO
 
 /// for owner that needs to get callbacks
 public protocol ComputeWorkerDelegate: class {
@@ -33,9 +34,9 @@ public enum ComputeState: Int, CaseIterable {
 
 /// encapsulates all communication with the compute engine
 public class ComputeWorker {
-	static func create(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?) -> ComputeWorker
+	static func create(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, eventGroup: EventLoopGroup, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?) -> ComputeWorker
 	{
-		return ComputeWorker(wspaceId: wspaceId, sessionId: sessionId, config: config, logger: logger, delegate: delegate, queue: queue)
+		return ComputeWorker(wspaceId: wspaceId, sessionId: sessionId, config: config, eventGroup: eventGroup, logger: logger, delegate: delegate, queue: queue)
 	}
 	
 	let logger: Logger
@@ -43,6 +44,7 @@ public class ComputeWorker {
 	let wspaceId: Int
 	let sessionId: Int
 	let k8sServer: K8sServer?
+	let eventGroup: EventLoopGroup
 	private var socket: Socket? = nil
 	private var readBuffer: UnsafeMutablePointer<CChar>
 	private var readBufferSize: Int
@@ -55,7 +57,7 @@ public class ComputeWorker {
 	}
 	private var podFailureCount = 0
 	
-	private init(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?)
+	private init(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, eventGroup: EventLoopGroup, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?)
 	{
 		self.logger = logger
 		self.config = config
@@ -63,6 +65,7 @@ public class ComputeWorker {
 		self.wspaceId = wspaceId
 		self.delegate = delegate
 		self.k8sServer = k8sServer
+		self.eventGroup = eventGroup
 		readBufferSize = config.computeReadBufferSize
 		readBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: readBufferSize)
 		readBuffer.initialize(repeating: 0, count: readBufferSize)

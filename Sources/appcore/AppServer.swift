@@ -14,6 +14,7 @@ import pgswift
 import CommandLine
 import FileKit
 import KituraWebSocket
+import NIO
 
 enum Handlers: String {
 	case info
@@ -118,8 +119,7 @@ public class App {
 			src2.resume()
 			try postInit()
 			logger.info("listening on \(listenPort)")
-			// TODO: assign below to let httpServer = , then call httpServer.eventLoopGrpup =
-			Kitura.addHTTPServer(onPort: listenPort, with: router)
+			settings.set(nioGroup: Kitura.addHTTPServer(onPort: listenPort, with: router).eventLoopGroup)
 			Kitura.run(exitOnFailure: true)
 			logger.critical("Kitura.run exited")
 		} catch {
