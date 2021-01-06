@@ -84,13 +84,13 @@ public class ComputeWorker {
 	
 	public func shutdown() throws {
 		// FIXME: make the asych
-		guard channel?.isActive
-		guard state == .connected, socket?.isConnected ?? false else {
-			logger.info("asked to shutdown when not running")
-			throw ComputeError.notConnected
-		}
-		socket?.close()
-		socket = nil
+//		guard channel?.isActive
+//		guard state == .connected, socket?.isConnected ?? false else {
+//			logger.info("asked to shutdown when not running")
+//			throw ComputeError.notConnected
+//		}
+//		socket?.close()
+//		socket = nil
 	}
 	
 	public func send(data: Data) throws {
@@ -112,6 +112,7 @@ public class ComputeWorker {
 	private func createBootstrap(group: EventLoopGroup) -> ClientBootstrap {
 		return ClientBootstrap(group: group)
 			.channelInitializer { (channel) -> EventLoopFuture<Void> in
+				
 				channel.pipeline.addHandlers( [ByteToMessageHandler(MessageDecoder()), ComputeInboundHandler(delegate: self.delegate!, logger: self.logger)] )
 			}
 	}
