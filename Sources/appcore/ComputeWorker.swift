@@ -45,6 +45,7 @@ public class ComputeWorker {
 	let sessionId: Int
 	let k8sServer: K8sServer?
 	let eventGroup: EventLoopGroup
+	private var channel: Channel?
 	private var socket: Socket? = nil
 	private var readBuffer: UnsafeMutablePointer<CChar>
 	private var readBufferSize: Int
@@ -70,6 +71,9 @@ public class ComputeWorker {
 		readBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: readBufferSize)
 		readBuffer.initialize(repeating: 0, count: readBufferSize)
 		readQueue = queue ?? DispatchQueue.global(qos: .default)
+		if Self._bootstrap == nil {
+			Self._bootstrap = createBootstrap(group: eventGroup)
+		}
 	}
 
 	deinit {
@@ -81,7 +85,7 @@ public class ComputeWorker {
 	public func start() throws {
 		assert(state == .uninitialized, "programmer error: invalid state")
 		guard config.computeViaK8s else {
-			try openConnection(ipAddr: config.computeHost)
+			try openConnection(ipAddr: config.computeHost, port: config.computePort)
 			return
 		}
 		guard k8sServer != nil else { fatalError("programmer error: can't use k8s without a k8s server") }
@@ -101,21 +105,26 @@ public class ComputeWorker {
 	
 	public func send(data: Data) throws {
 		guard data.count > 0 else { throw ComputeError.sendingEmptyMessage }
-		guard state == .connected, let socket = socket, socket.isConnected else { throw ComputeError.notConnected }
+		guard state == .connected, let channel = channel, channel.isWritable else { throw ComputeError.notConnected }
 		var headBytes = [UInt8](repeating: 0, count: 8)
 		headBytes.replaceSubrange(0...3, with: valueByteArray(UInt32(0x21).byteSwapped))
 		headBytes.replaceSubrange(4...7, with: valueByteArray(UInt32(data.count).byteSwapped))
 		let rawData = Data(headBytes) + data
 		logger.info("sending to compute: \(String(data: rawData, encoding: .utf8) ?? "no data" )")
-		do {
-			try socket.write(from: rawData)
-		} catch {
-			logger.warning("failed to write: \(error)")
-			throw ComputeError.failedToWrite
-		}
+		channel.writeAndFlush(rawData)
 	}
 
 	// MARK: - private methods
+	
+	private static var _bootstrap: ClientBootstrap?
+	private static var bootstrap: ClientBootstrap { return _bootstrap! }
+	
+	private func createBootstrap(group: EventLoopGroup) -> ClientBootstrap {
+		return ClientBootstrap(group: group)
+			.channelInitializer { (channel) -> EventLoopFuture<Void> in
+				channel.pipeline.addHandlers( [ByteToMessageHandler(MessageDecoder()), ComputeInboundHandler(delegate: self.delegate!, logger: self.logger)] )
+			}
+	}
 	
 	private func launchCompute() {
 		guard let k8sServer = k8sServer else { fatalError("missing k8s server") }
@@ -129,24 +138,23 @@ public class ComputeWorker {
 		}
 	}
 
-	private func openConnection(ipAddr: String) throws {
-		do {
-			self.state = .connecting
-			socket = try Socket.create()
-			socket?.readBufferSize = 32768 // 32 KB
-			let port = Int32(config.computePort) //kitura uses Int32 for legacy purposes
-			logger.debug("compute connectding to \(config.computeHost):\(port)")
-			try socket?.connect(to: config.computeHost, port: port)
-			logger.debug("compute worker socket open")
-			self.state = .connected
-			readQueue.async { [weak self] in
-				self?.readNext()
+	private func openConnection(ipAddr: String, port: UInt16) throws {
+		precondition(!Thread.current.isMainThread)
+		self.state = .connecting
+		
+		Self.bootstrap.connect(host: ipAddr, port: Int(port))
+			.whenComplete { result in
+				switch result {
+				case .failure(let error):
+					self.logger.error("failed to connect to compute: \(error)")
+					self.state = .failedToConnect
+					self.delegate?.handleCompute(error: .failedToConnect)
+				case .success(let channel):
+					self.state = .connected
+					self.channel = channel
+					self.delegate?.handleCompute(statusUpdate: .connected)
+				}
 			}
-		} catch {
-			logger.error("error opening socket to compute engine: \(error)")
-			self.state = .failedToConnect
-			throw ComputeError.failedToConnect
-		}
 	}
 	
 	private func updateStatus() {
@@ -225,5 +233,86 @@ public class ComputeWorker {
 			UnsafeMutableRawPointer($0.baseAddress!).storeBytes(of: value, as: T.self)
 		}
 		return data
+	}
+}
+
+private struct MessageDecoder: ByteToMessageDecoder {
+	typealias InboundOut = ByteBuffer
+	
+	private var bytesNeeded: UInt32 = 0
+	
+	mutating func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+		if bytesNeeded == 0 {
+			guard buffer.readableBytes >= 8 else { return .needMoreData }
+			let magic: UInt32 = buffer.readInteger()!
+			bytesNeeded = buffer.readInteger()!
+			guard magic == 0x21, buffer.readableBytes >= bytesNeeded else { return .needMoreData }
+		}
+		guard buffer.readableBytes >= bytesNeeded else { return .needMoreData }
+		defer { bytesNeeded = 0 }
+		let tmpBuffer = buffer.readSlice(length: Int(bytesNeeded))!
+		context.fireChannelRead(self.wrapInboundOut(tmpBuffer))
+		return .continue
+	}
+}
+
+//mutating func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+//	// if bytesNeeded == 0, try to treat as an entire package
+//	if bytesNeeded == 0 {
+//		guard buffer.readableBytes >= 8 else { return .needMoreData }
+//		let magic: UInt32 = buffer.readInteger()!
+//		let len: UInt32 = buffer.readInteger()!
+//		guard magic == 0x21, buffer.readableBytes >= len else { return .needMoreData }
+//		var tmpBuffer = buffer.readSlice(length: Int(len))!
+//		delegate.processMessage(buffer: &tmpBuffer)
+//		return .continue
+//	}
+//	guard buffer.readableBytes >= bytesNeeded else { return .needMoreData }
+//	var tmpBuffer = buffer.readSlice(length: bytesNeeded)!
+//	bytesNeeded = 0
+//	delegate.processMessage(buffer: &tmpBuffer)
+//	//pass so worker
+//	return .continue
+//}
+//}
+
+// TODO: if the romote connection is closed, what happens? Need to make sure we call delegate.handleConnectionClosed()
+private class ComputeInboundHandler: ChannelInboundHandler {
+	typealias InboundIn = ByteBuffer
+	typealias InboundOut = [UInt8]
+	// this has to be a var to be weak.
+	private weak var delegate: ComputeWorkerDelegate?
+	private let logger: Logger
+	private var toldClosed = false
+	
+	init(delegate: ComputeWorkerDelegate, logger: Logger) {
+		self.delegate = delegate
+		self.logger = logger
+	}
+	
+	func errorCaught(context: ChannelHandlerContext, error: Error) {
+		logger.error("got error in channel: \(error)")
+		guard let err = error as? ChannelError else { return }
+		// TODO: handle all other types of error
+		switch err {
+		case .ioOnClosedChannel, .inputClosed, .alreadyClosed, .eof:
+			if !toldClosed {
+				toldClosed = true
+				delegate?.handleConnectionClosed()
+			} else {
+				delegate?.handleCompute(error: .notConnected)
+			}
+			default:
+				delegate?.handleCompute(error: .unknown)
+		}
+	}
+	
+	func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+		let inbuf = self.unwrapInboundIn(data)
+		guard let data = inbuf.getData(at: 0, length: inbuf.readableBytes) else {
+			logger.error("failed to get Data from inbound buffer")
+			return
+		}
+		delegate?.handleCompute(data: data)
 	}
 }
