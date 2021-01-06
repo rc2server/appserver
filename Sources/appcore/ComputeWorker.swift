@@ -46,10 +46,6 @@ public class ComputeWorker {
 	let k8sServer: K8sServer?
 	let eventGroup: EventLoopGroup
 	private var channel: Channel?
-	private var socket: Socket? = nil
-	private var readBuffer: UnsafeMutablePointer<CChar>
-	private var readBufferSize: Int
-	private let readQueue: DispatchQueue
 	private let lock = DispatchSemaphore(value: 1)
 	
 	private weak var delegate: ComputeWorkerDelegate?
@@ -67,19 +63,11 @@ public class ComputeWorker {
 		self.delegate = delegate
 		self.k8sServer = k8sServer
 		self.eventGroup = eventGroup
-		readBufferSize = config.computeReadBufferSize
-		readBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: readBufferSize)
-		readBuffer.initialize(repeating: 0, count: readBufferSize)
-		readQueue = queue ?? DispatchQueue.global(qos: .default)
 		if Self._bootstrap == nil {
 			Self._bootstrap = createBootstrap(group: eventGroup)
 		}
 	}
 
-	deinit {
-		readBuffer.deallocate()
-	}
-	
 	// MARK: - functions
 	
 	public func start() throws {
@@ -95,6 +83,8 @@ public class ComputeWorker {
 	}
 	
 	public func shutdown() throws {
+		// FIXME: make the asych
+		guard channel?.isActive
 		guard state == .connected, socket?.isConnected ?? false else {
 			logger.info("asked to shutdown when not running")
 			throw ComputeError.notConnected
@@ -159,64 +149,6 @@ public class ComputeWorker {
 	
 	private func updateStatus() {
 		fatalError("not implemented")
-	}
-	
-	private func readNext() {
-		guard let socket = socket, socket.isActive, !socket.remoteConnectionClosed else {
-			if state == .unusable { return } //duplicate time
-			state = .unusable
-			logger.warning("no open socket to read or closed connection")
-			delegate?.handleConnectionClosed()
-			return
-		}
-		let waitStatus = lock.wait(timeout: .now() + .milliseconds(2))
-		// if lock is busy, don't want to queue another read
-		guard waitStatus == .success else { return }
-		defer { lock.signal() }
-		// in any other case, we'll want to read again
-		defer { readQueue.async { [weak self] in self?.readNext() } }
-		// read our magic header
-		let header = UnsafeMutablePointer<CChar>.allocate(capacity: 8)
-		defer { header.deallocate() }
-		header.initialize(repeating: 0, count: 8)
-		do {
-			let readCount = try socket.read(into: header, bufSize: 8, truncate: true)
-			if readCount == 0 {
-				// need to check status of socket
-				if socket.remoteConnectionClosed, state != .unusable {
-					self.state = .unusable
-					self.socket?.close()
-					delegate?.handleConnectionClosed()
-				}
-				return
-			}
-			guard readCount == 8 else {
-				// this could only happen if we connected to an invalid server.
-				// TODO: abort this worker
-				logger.error("failed to read magic header: \(readCount)")
-				return
-			}
-			let anticipatedSize = try verifyMagicHeader(bytes: header)
-			let sizeToRead = readBufferSize > anticipatedSize ? anticipatedSize : readBufferSize
-			// now read size bytes
-			let sizeRead = try socket.read(into: readBuffer, bufSize: sizeToRead, truncate: true)
-			guard sizeRead == sizeToRead else {
-				logger.error("size read from compute (\(sizeRead)) does not match anticipated size (\(anticipatedSize))")
-				return // just throw away what was read
-			}
-			// pass along a Data w/o copying the memory
-			let rawPtr = UnsafeMutableRawPointer(readBuffer)
-			let tmpData = Data(bytesNoCopy: rawPtr, count: sizeRead, deallocator: .none)
-			logger.debug("read from compute: \(tmpData)")
-			readQueue.sync {
-				self.delegate?.handleCompute(data: tmpData)
-			}
-		} catch {
-			logger.error("error reading from compute socket: \(error)")
-			readQueue.async {
-				self.delegate?.handleCompute(error: .failedToReadMessage)
-			}
-		}
 	}
 	
 	private func verifyMagicHeader(bytes: UnsafeMutablePointer<CChar>) throws -> Int {
