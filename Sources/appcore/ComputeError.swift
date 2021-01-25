@@ -26,6 +26,8 @@ public enum ComputeError: Error {
 	case notConnected
 	/// Kubernetes failed to launch too many times
 	case tooManyCrashes
+	/// Network layer error
+	case network
 	/// some other type of error
 	case unknown
 }
