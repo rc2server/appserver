@@ -39,12 +39,18 @@ public class ComputeWorker {
 		return ComputeWorker(wspaceId: wspaceId, sessionId: sessionId, config: config, eventGroup: eventGroup, logger: logger, delegate: delegate, queue: queue)
 	}
 	
+	struct WriteData {
+		let src: String
+		let data: Data
+	}
+	
 	let logger: Logger
 	let config: AppConfiguration
 	let wspaceId: Int
 	let sessionId: Int
 	let k8sServer: K8sServer?
 	let eventGroup: EventLoopGroup
+	var outgoingData = CircularBuffer<WriteData>(initialCapacity: 10)
 	private var channel: Channel?
 	private let lock = DispatchSemaphore(value: 1)
 	
@@ -63,6 +69,7 @@ public class ComputeWorker {
 		self.delegate = delegate
 		self.k8sServer = k8sServer
 		self.eventGroup = eventGroup
+		// there should only be 1 bootstrap client for the entire application
 		if Self._bootstrap == nil {
 			Self._bootstrap = createBootstrap(group: eventGroup)
 		}
@@ -101,7 +108,7 @@ public class ComputeWorker {
 		headBytes.replaceSubrange(4...7, with: valueByteArray(UInt32(data.count).byteSwapped))
 		let rawData = Data(headBytes) + data
 		logger.info("sending to compute: \(String(data: rawData, encoding: .utf8) ?? "no data" )")
-		channel.writeAndFlush(rawData)
+		_ = channel.writeAndFlush(rawData) // FIXME: neeed to listen
 	}
 
 	// MARK: - private methods
@@ -110,9 +117,11 @@ public class ComputeWorker {
 	private static var bootstrap: ClientBootstrap { return _bootstrap! }
 	
 	private func createBootstrap(group: EventLoopGroup) -> ClientBootstrap {
+		precondition(Self._bootstrap == nil)
 		return ClientBootstrap(group: group)
+			.channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
+			.channelOption(ChannelOptions.socketOption(.so_keepalive), value: 1)
 			.channelInitializer { (channel) -> EventLoopFuture<Void> in
-				
 				channel.pipeline.addHandlers( [ByteToMessageHandler(MessageDecoder()), ComputeInboundHandler(delegate: self.delegate!, logger: self.logger)] )
 			}
 	}
@@ -189,25 +198,6 @@ private struct MessageDecoder: ByteToMessageDecoder {
 	}
 }
 
-//mutating func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-//	// if bytesNeeded == 0, try to treat as an entire package
-//	if bytesNeeded == 0 {
-//		guard buffer.readableBytes >= 8 else { return .needMoreData }
-//		let magic: UInt32 = buffer.readInteger()!
-//		let len: UInt32 = buffer.readInteger()!
-//		guard magic == 0x21, buffer.readableBytes >= len else { return .needMoreData }
-//		var tmpBuffer = buffer.readSlice(length: Int(len))!
-//		delegate.processMessage(buffer: &tmpBuffer)
-//		return .continue
-//	}
-//	guard buffer.readableBytes >= bytesNeeded else { return .needMoreData }
-//	var tmpBuffer = buffer.readSlice(length: bytesNeeded)!
-//	bytesNeeded = 0
-//	delegate.processMessage(buffer: &tmpBuffer)
-//	//pass so worker
-//	return .continue
-//}
-//}
 
 // TODO: if the romote connection is closed, what happens? Need to make sure we call delegate.handleConnectionClosed()
 private class ComputeInboundHandler: ChannelInboundHandler {
