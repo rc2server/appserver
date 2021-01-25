@@ -23,7 +23,8 @@ let package = Package(
 		.package(url: "https://github.com/Thomvis/BrightFutures.git", from: "8.0.1"),
 		.package(url: "https://github.com/ianpartridge/swift-backtrace.git", from: "1.1.1"),
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.0.0"),
-		.package(url: "https://github.com/mlilback/SwiftyJSON.git", .branch("master"))
+		.package(url: "https://github.com/mlilback/SwiftyJSON.git", .branch("master")),
+		.package(name: "KituraWebSocketClient", path: "../Kitura-WebSocket-Client")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -39,6 +40,7 @@ let package = Package(
 			.product(name: "Kitura-WebSocket", package: "KituraWebSocket"),
 			 "Rc2Model", "pgswift", "HeliumLogger", 
 			 .product(name: "Logging", package: "swift-log"), 
+			 .product(name: "KituraWebSocketClient", package: "KituraWebSocketClient"),
 			 "CommandLine", "SwiftJWT", "Zip", "FileKit", "Socket", "BrightFutures"]),
         .target(
         	name: "servermodel",
