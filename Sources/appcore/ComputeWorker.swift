@@ -12,6 +12,8 @@ import NIO
 import NIOHTTP1
 import KituraWebSocketClient
 
+// FIXME: This viersion using KituraWebSocketClient is having serious issues. Saving this version so can re-implement but come back if necessary
+
 /// for owner that needs to get callbacks
 public protocol ComputeWorkerDelegate: class {
 	/// the data will be invalid after this call. (it is pointing to a raw memory buffer that will be deallocated)
@@ -73,10 +75,13 @@ public class ComputeWorker {
 	public func start() throws {
 		assert(state == .uninitialized, "programmer error: invalid state")
 		guard config.computeViaK8s else {
-			do {
-				try wsclient.connect()
-			} catch {
-				throw ComputeError.failedToConnect
+			DispatchQueue.global().async {
+				do {
+					try self.wsclient.connect()
+				} catch {
+					//throw ComputeError.failedToConnect
+					self.logger.error("failed to connect to compute: \(error)")
+				}
 			}
 			return
 		}
