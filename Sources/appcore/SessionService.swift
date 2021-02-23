@@ -64,7 +64,7 @@ class SessionService: WebSocketService, Hashable {
 				{
 					do {
 						me.logger.info("reaping session \(session.sessionId ?? -1) for wspace \(wspaceId)")
-						try session.shutdown()
+//						try session.shutdown()
 					} catch {
 						me.logger.info("error reaping session \(wspaceId): \(error)")
 					}
@@ -153,9 +153,9 @@ class SessionService: WebSocketService, Hashable {
 			return
 		}
 		do {
-			let path = "/tmp/rcvd." + UUID().uuidString
-			logger.info("writing message to \(path)")
-			try! message.write(to: URL(fileURLWithFileSystemRepresentation: path, isDirectory: false, relativeTo: nil))
+//			let path = "/tmp/rcvd." + UUID().uuidString
+//			logger.info("writing message to \(path)")
+//			try! message.write(to: URL(fileURLWithFileSystemRepresentation: path, isDirectory: false, relativeTo: nil))
 			let command = try settings.decode(SessionCommand.self, from: message)
 			// tell session to handle the query
 			session.handle(command: command, from: sconnection)
