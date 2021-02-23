@@ -79,6 +79,12 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 			if ProcessInfo.processInfo.environment["RC2_LOG_CLIENT_OUT"] != nil {
 				cfg.logClientOutgoing = true
 			}
+			if ProcessInfo.processInfo.environment["RC2_LOG_COMPUTE_IN"] != nil {
+				cfg.logComputeIncoming = true
+			}
+			if ProcessInfo.processInfo.environment["RC2_LOG_COMPUTE_OUT"] != nil {
+				cfg.logComputeOutgoing = true
+			}
 			config = cfg
 		} catch {
 			fatalError("failed to load config file \(configUrl.absoluteString) \(error)")
@@ -186,7 +192,11 @@ public struct AppConfiguration: Decodable {
 	public internal(set) var logClientOutgoing: Bool
 	/// Should all JSON received from a client be logged
 	public internal(set) var logClientIncoming: Bool
-	
+	/// Should all JSON sent to compute be logged
+	public internal(set) var logComputeOutgoing: Bool
+	/// Should all JSON received from compute be logged
+	public internal(set) var logComputeIncoming: Bool
+
 	enum CodingKeys: String, CodingKey {
 		case dbHost
 		case dbPort
@@ -213,6 +223,8 @@ public struct AppConfiguration: Decodable {
 		case computeStartupDelay
 		case logClientOutgoing
 		case logClientIncoming
+		case logComputeOutgoing
+		case logComputeIncoming
 	}
 	
 	/// Initializes from serialization.
@@ -239,6 +251,8 @@ public struct AppConfiguration: Decodable {
 		computeDbPort = try container.decodeIfPresent(String.self, forKey: .computeDbPort) ?? "5432"
 		logClientIncoming = try container.decodeIfPresent(Bool.self, forKey: .logClientIncoming) ?? false
 		logClientOutgoing = try container.decodeIfPresent(Bool.self, forKey: .logClientOutgoing) ?? false
+		logComputeIncoming = try container.decodeIfPresent(Bool.self, forKey: .logComputeIncoming) ?? false
+		logComputeOutgoing = try container.decodeIfPresent(Bool.self, forKey: .logComputeOutgoing) ?? false
 
 		let cdb = try container.decodeIfPresent(String.self, forKey: .computeDbHost)
 		computeDbHost = cdb == nil ? dbHost : cdb!
