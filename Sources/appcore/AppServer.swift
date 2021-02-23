@@ -40,6 +40,8 @@ public class App {
 	private var clArgs: [String]
 	
 	public init(_ args: [String]? = nil) throws {
+		heLogger.dateFormat = "HH:mm:ss.SSS"
+		heLogger.format = "[(%date)] [(%type)] [(%file):(%line)] (%msg)"
 		LoggingSystem.bootstrap(heLogger.makeLogHandler)
 		if let rargs = args {
 			clArgs = rargs
