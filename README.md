@@ -20,6 +20,10 @@ The following environment variables can be used to override the config file:
 	<dd>If set, log JSON received from a client</dd>
 	<dt>RC2_LOG_CLIENT_OUT</dt>
 	<dd>If set, all JSON sent to the cient will be logged</dd>
+	<dt>RC2_LOG_COMPUTE_IN</dt>
+	<dd>If set, all JSON received from compute is logged</dd>
+	<dt>RC2_LOG_COMPUTE_OUT</dt>
+	<dd>If set, all JSON sent to compute is logged</dd>
 </dl>
 
 ## working with Xcode

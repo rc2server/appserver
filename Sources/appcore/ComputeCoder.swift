@@ -40,8 +40,8 @@ class ComputeCoder {
 		return try encoder.encode(obj)
 	}
 	
-	func updatePreview(previewId: Int, chunkNumber: Int?, includePrevious: Bool) throws -> Data {
-		let obj = UpdatePreviewCommand(previewId: previewId, chunkId: chunkNumber, includePrevious: includePrevious)
+	func updatePreview(previewId: Int, chunkNumber: Int?, includePrevious: Bool, updateIdentifier: String) throws -> Data {
+		let obj = UpdatePreviewCommand(previewId: previewId, chunkId: chunkNumber, includePrevious: includePrevious, updateIdentifier: updateIdentifier)
 		return try encoder.encode(obj)
 	}
 	

@@ -131,10 +131,8 @@ class Session {
 		case .createEnvironment(let params):
 			handleCreateEnvironment(transId: params.transactionId, parentId: params.parendId, variableName: params.variableName)
 		case .initPreview(let data):
-			logger.info("initPreview cmd received")
 			handleInitPreview(updateData: data)
 		case .updatePreview(let updateData):
-			logger.info("updatePreview cmd received")
 			handleUpdatePreview(updateData: updateData)
 		case .removePreview(let previewId):
 			handleRemovePreview(previewId: previewId)
@@ -211,9 +209,10 @@ extension Session: Hashable {
 extension Session: ComputeWorkerDelegate {
 	func handleCompute(data: Data) {
 		do {
-			logger.debug("handling: \(String(data: data, encoding: .utf8)!)")
+			if settings.config.logComputeIncoming {
+				logger.info("compute sent: \(String(data: data, encoding: .utf8)!)")
+			}
 			let response = try coder.parseResponse(data: data)
-			logger.debug("parsed compute response")
 			switch response {
 			case .open(let openData):
 				handleOpenResponse(success: openData.success, errorMessage: openData.errorMessage)
@@ -618,10 +617,14 @@ extension Session {
 	
 	private func handleInitPreview(updateData: SessionCommand.InitPreviewParams) {
 		logger.info("handleInitPreview called: \(updateData.updateIdentifier)")
+		guard let worker = worker else {
+			logger.error("asked to init preview with no compute worker")
+			return
+		}
 		do {
 			let cmd = try coder.initPreview(fileId: updateData.fileId, updateIdentifier: updateData.updateIdentifier)
 			if cmd.count < 1 { logger.info("sending empty data") }
-			try worker?.send(data: cmd)
+			try worker.send(data: cmd)
 		} catch {
 			logger.warning("error initing preview: \(error)")
 		}
@@ -629,20 +632,28 @@ extension Session {
 
 	private func handleUpdatePreview(updateData: SessionCommand.UpdatePreviewParams) {
 		logger.info("handle update preview called: \(updateData.updateIdentifier)")
+		guard let worker = worker else {
+			logger.error("asked to handle update with no compute worker")
+			return
+		}
 		do {
-			let cmd = try coder.updatePreview(previewId: updateData.previewId, chunkNumber: updateData.chunkId, includePrevious: updateData.includePrevious)
+			let cmd = try coder.updatePreview(previewId: updateData.previewId, chunkNumber: updateData.chunkId, includePrevious: updateData.includePrevious, updateIdentifier: updateData.updateIdentifier)
 			if cmd.count < 1 { logger.info("sending empty data") }
-			try worker?.send(data: cmd)
+			try worker.send(data: cmd)
 		} catch {
 			logger.warning("error updating preview: \(error)")
 		}
 	}
 	
 	private func handleRemovePreview(previewId: Int) {
+		guard let worker = worker else {
+			logger.error("asked to handle update with no compute worker")
+			return
+		}
 		do {
 			let cmd = try coder.removePreview(previewId: previewId)
 			if cmd.count < 1 { logger.info("sending empty data") }
-			try worker?.send(data: cmd)
+			try worker.send(data: cmd)
 		} catch {
 			logger.warning("error removing preview: \(error)")
 		}
