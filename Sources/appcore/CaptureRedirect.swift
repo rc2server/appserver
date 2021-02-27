@@ -8,7 +8,7 @@
 import Foundation
 
 public class CaptureRedirect: NSObject {
-	public typealias RedirectCallback = (HTTPURLResponse, URLRequest?, Error?) -> Void
+	public typealias RedirectCallback = (HTTPURLResponse?, URLRequest?, Error?) -> Void
 	private var session: URLSession?
 	private var callback: RedirectCallback?
 	private var madeCallback = false
@@ -27,11 +27,11 @@ public class CaptureRedirect: NSObject {
 				return
 			}
 			guard err == nil else {
-				me.callback?(rsp as! HTTPURLResponse, nil, err)
+				me.callback?(rsp as? HTTPURLResponse, nil, err)
 				me.callback = nil
 				return
 			}
-			me.callback?(rsp as! HTTPURLResponse, nil, nil)
+			me.callback?(rsp as? HTTPURLResponse, nil, nil)
 			me.callback = nil
 		})
 		task?.resume()
