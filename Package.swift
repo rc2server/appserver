@@ -24,6 +24,7 @@ let package = Package(
 		.package(url: "https://github.com/ianpartridge/swift-backtrace.git", from: "1.1.1"),
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.0.0"),
 		.package(url: "https://github.com/mlilback/SwiftyJSON.git", .branch("master")),
+		.package(url: "https://github.com/daltoniam/Starscream.git", from: "3.1https://arstechnica.com/?p=1742713.1"),
 		.package(name: "KituraWebSocketClient", path: "../Kitura-WebSocket-Client")
     ],
     targets: [
@@ -38,7 +39,7 @@ let package = Package(
 			name: "appcore",
 			dependencies: ["servermodel", "Kitura", 
 			.product(name: "Kitura-WebSocket", package: "KituraWebSocket"),
-			 "Rc2Model", "pgswift", "HeliumLogger", 
+			 "Rc2Model", "pgswift", "HeliumLogger", "Starscream",
 			 .product(name: "Logging", package: "swift-log"), 
 			 .product(name: "KituraWebSocketClient", package: "KituraWebSocketClient"),
 			 "CommandLine", "SwiftJWT", "Zip", "FileKit", "Socket", "BrightFutures"]),

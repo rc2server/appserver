@@ -7,10 +7,7 @@
 
 import Foundation
 import Logging
-import Socket
-import NIO
-import NIOHTTP1
-import KituraWebSocketClient
+import Starscream
 
 // FIXME: This viersion using KituraWebSocketClient is having serious issues. Saving this version so can re-implement but come back if necessary
 
@@ -38,9 +35,9 @@ public enum ComputeState: Int, CaseIterable {
 
 /// encapsulates all communication with the compute engine
 public class ComputeWorker {
-	static func create(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, eventGroup: EventLoopGroup, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?) -> ComputeWorker
+	static func create(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?) -> ComputeWorker
 	{
-		return ComputeWorker(wspaceId: wspaceId, sessionId: sessionId, config: config, eventGroup: eventGroup, logger: logger, delegate: delegate, queue: queue)
+		return ComputeWorker(wspaceId: wspaceId, sessionId: sessionId, config: config, logger: logger, delegate: delegate, queue: queue)
 	}
 	
 	let logger: Logger
@@ -48,16 +45,17 @@ public class ComputeWorker {
 	let wspaceId: Int
 	let sessionId: Int
 	let k8sServer: K8sServer?
-	let eventGroup: EventLoopGroup
-	let wsclient: WebSocketClient
-	
+	var wssocket: WebSocket?
+	private var initialRequestInProgress = false
+
 	private weak var delegate: ComputeWorkerDelegate?
+	// FIXME: make this threadsafe
 	private(set) var state: ComputeState = .uninitialized {
 		didSet { delegate?.handleCompute(statusUpdate: state) }
 	}
 	private var podFailureCount = 0
 	
-	private init(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, eventGroup: EventLoopGroup, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?)
+	private init(wspaceId: Int, sessionId: Int, k8sServer:  K8sServer? = nil, config: AppConfiguration, logger: Logger, delegate: ComputeWorkerDelegate, queue: DispatchQueue?)
 	{
 		self.logger = logger
 		self.config = config
@@ -65,9 +63,6 @@ public class ComputeWorker {
 		self.wspaceId = wspaceId
 		self.delegate = delegate
 		self.k8sServer = k8sServer
-		self.eventGroup = eventGroup
-		let wsUrl = "ws://\(config.computeHost):9001/";
-		self.wsclient = WebSocketClient(wsUrl, eventLoopGroup: eventGroup)! // code shows no path to return nil
 	}
 
 	// MARK: - functions
@@ -75,12 +70,39 @@ public class ComputeWorker {
 	public func start() throws {
 		assert(state == .uninitialized, "programmer error: invalid state")
 		guard config.computeViaK8s else {
-			DispatchQueue.global().async {
-				do {
-					try self.wsclient.connect()
-				} catch {
-					//throw ComputeError.failedToConnect
-					self.logger.error("failed to connect to compute: \(error)")
+			logger.info("getting compute port number")
+			let rc = CaptureRedirect()
+			let initReq = URLRequest(url: URL(string: "ws://\(config.computeHost):7714/")!)
+			state = .loading
+			rc.perform(request: initReq) { (response, _, error) in
+				guard error == nil else {
+					self.logger.error("failed to get ws port: \(error?.localizedDescription ?? "no new request")")
+					self.delegate?.handleCompute(error: .failedToConnect)
+					return
+				}
+				guard let rsp = response, rsp.statusCode == 302, var urlstr = rsp.allHeaderFields["Location"] as? String else {
+					self.logger.error("failed to redirect location")
+					self.delegate?.handleCompute(error: .failedToConnect)
+					return
+				}
+				if !urlstr.starts(with: "ws") {
+					urlstr = "ws://\(urlstr)"
+				}
+				guard let url = URL(string: urlstr) else {
+					self.logger.error("failed to turn \(urlstr) into a url")
+					self.delegate?.handleCompute(error: .failedToConnect)
+					return
+				}
+				self.logger.info("connecting to compute on \(url.port ?? -1)")
+				self.wssocket = WebSocket(request: URLRequest(url: url))
+				self.wssocket?.delegate = self
+				self.wssocket?.respondToPingWithPong = true
+				self.wssocket?.callbackQueue = .global()
+				self.state = .connecting
+				// FIXME: this delay should be on compute
+				DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(200)) {
+					self.logger.info("opening ws connection")
+					self.wssocket?.connect()
 				}
 			}
 			return
@@ -92,17 +114,23 @@ public class ComputeWorker {
 	}
 	
 	public func shutdown() throws {
-		guard state == .connected, wsclient.isConnected else {
+		guard let ws = wssocket, state == .connected else {
 			logger.info("asked to shutdown when not running")
 			throw ComputeError.notConnected
 		}
-		wsclient.close()
+		ws.disconnect()
 	}
 	
 	public func send(data: Data) throws {
 		guard data.count > 0 else { throw ComputeError.sendingEmptyMessage }
-		guard state == .connected, wsclient.isConnected else { throw ComputeError.notConnected }
-		wsclient.sendMessage(data: data, opcode: .text)
+		guard let ws = wssocket, state == .connected else { throw ComputeError.notConnected }
+		// FIXME: compute should accept binary so we don't have this unnecessary serialization
+		let strJson = String(data: data, encoding: .utf8)!
+		if config.logComputeOutgoing {
+			logger.info("to compute: \(strJson)")
+		}
+		ws.write(string: strJson)
+//		ws.write(data: data)
 	}
 
 	// MARK: - private methods
@@ -124,31 +152,48 @@ public class ComputeWorker {
 	}
 }
 
-extension ComputeWorker: WebSocketClientDelegate {
-	public func onText(text: String) {
-		logger.warning("compute worker received unexpected text from server");
+extension ComputeWorker: WebSocketDelegate {
+	public func websocketDidConnect(socket: WebSocketClient) {
+		state = .connected
 	}
 	
-	public func onBinary(data: Data) {
-		delegate?.handleCompute(data: data)
-	}
-	
-	public func onPing(data: Data) {
-		wsclient.pong(data: data)
-	}
-	
-	public func onPong(data: Data) {
-		wsclient.ping(data: data)
-	}
-	
-	public func onClose(channel: Channel, data: Data) {
+	public func websocketDidDisconnect(socket: WebSocketClient, error: Error?) {
 		delegate?.handleConnectionClosed()
 	}
 	
-	public func onError(error: Error?, status: HTTPResponseStatus?) {
-		logger.warning("computer socket error: \(error?.localizedDescription ?? "?") for status: \(status?.reasonPhrase ?? "-")")
-		delegate?.handleCompute(error: .network)
+	public func websocketDidReceiveMessage(socket: WebSocketClient, text: String) {
+		delegate?.handleCompute(data: text.data(using: .utf8)!)
 	}
 	
+	public func websocketDidReceiveData(socket: WebSocketClient, data: Data) {
+		delegate?.handleCompute(data: data)
+	}
 	
+	/*public func didReceive(event: WebSocketEvent, client: WebSocket) {
+		switch event {
+		
+		case .connected(_):
+			state = .connected
+		case .disconnected(_, _):
+			delegate?.handleConnectionClosed()
+		case .text(let text):
+			delegate?.handleCompute(data: text.data(using: .utf8)!)
+		case .binary(let data):
+			delegate?.handleCompute(data: data)
+		case .pong(_):
+			break
+		case .ping(_):
+			break
+		case .error(let error):
+			logger.warning("got error from compute: \(error?.localizedDescription ?? "unknown")")
+			delegate?.handleCompute(error: .network)
+		case .viabilityChanged(_):
+			break
+		case .reconnectSuggested(_):
+			break
+		case .cancelled:
+			state = .unusable
+			logger.warning("compute ws said cancelled")
+		}
+	} */
 }

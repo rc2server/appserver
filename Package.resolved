@@ -155,6 +155,15 @@
         }
       },
       {
+        "package": "Starscream",
+        "repositoryURL": "https://github.com/daltoniam/Starscream.git",
+        "state": {
+          "branch": null,
+          "revision": "e6b65c6d9077ea48b4a7bdda8994a1d3c6969c8d",
+          "version": "3.1.1"
+        }
+      },
+      {
         "package": "swift-backtrace",
         "repositoryURL": "https://github.com/ianpartridge/swift-backtrace.git",
         "state": {
@@ -206,6 +215,15 @@
           "branch": null,
           "revision": "eb102ad32add8638410e37a69bc815ea11379813",
           "version": "2.10.0"
+        }
+      },
+      {
+        "package": "swift-nio-zlib-support",
+        "repositoryURL": "https://github.com/apple/swift-nio-zlib-support.git",
+        "state": {
+          "branch": null,
+          "revision": "37760e9a52030bb9011972c5213c3350fa9d41fd",
+          "version": "1.0.0"
         }
       },
       {
