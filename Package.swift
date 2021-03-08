@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "kappserver",
 	platforms: [
-		.macOS(.v10_14)
+		.macOS(.v11)
 	],
     dependencies: [
 		.package(name: "Rc2Model", url: "https://github.com/rc2server/appmodelSwift.git", from: "0.2.6"),
@@ -19,7 +19,7 @@ let package = Package(
 		.package(url: "https://github.com/Kitura/HeliumLogger.git", from: "1.9.2"),
 		.package(url: "https://github.com/marmelroy/Zip.git", from: "2.1.1"),
 		.package(url: "https://github.com/Kitura/FileKit.git", from: "0.0.2"),
-        .package(url: "https://github.com/mlilback/pgswift.git", from: "0.1.0"),
+        .package(url: "https://github.com/mlilback/pgswift.git", from: "0.1.2"),
 		.package(url: "https://github.com/Thomvis/BrightFutures.git", from: "8.0.1"),
 		.package(url: "https://github.com/ianpartridge/swift-backtrace.git", from: "1.1.1"),
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.0.0"),
