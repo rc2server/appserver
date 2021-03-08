@@ -49,7 +49,7 @@ public class ComputeWorker {
 	let sessionId: Int
 	let k8sServer: K8sServer?
 	let eventGroup: EventLoopGroup
-	let wsclient: WebSocketClient
+	var wsclient: WebSocketClient?
 	
 	private weak var delegate: ComputeWorkerDelegate?
 	private(set) var state: ComputeState = .uninitialized {
@@ -66,33 +66,28 @@ public class ComputeWorker {
 		self.delegate = delegate
 		self.k8sServer = k8sServer
 		self.eventGroup = eventGroup
-		let wsUrl = "ws://\(config.computeHost):9001/";
-		self.wsclient = WebSocketClient(wsUrl, eventLoopGroup: eventGroup)! // code shows no path to return nil
 	}
 
 	// MARK: - functions
 	
 	public func start() throws {
 		assert(state == .uninitialized, "programmer error: invalid state")
-		guard config.computeViaK8s else {
-			DispatchQueue.global().async {
-				do {
-					try self.wsclient.connect()
-				} catch {
-					//throw ComputeError.failedToConnect
-					self.logger.error("failed to connect to compute: \(error)")
-				}
-			}
+		guard !config.computeViaK8s else {
+			assert(k8sServer != nil, "programmer error: can't use k8s without a k8s server")
+			// need to start dance of finding and/or launching the compute k8s pod
+			state = .initialHostSearch
+			updateStatus()
 			return
 		}
-		guard k8sServer != nil else { fatalError("programmer error: can't use k8s without a k8s server") }
-		// need to start dance of finding and/or launching the compute k8s pod
-		state = .initialHostSearch
-		updateStatus()
+		logger.info("getting compute port number")
+		let rc = CaptureRedirect()
+		let initReq = URLRequest(url: URL(string: "ws://\(config.computeHost):7714/")!)
+		state = .loading
+		rc.perform(request: initReq, callback: handleRedirect(response:request:error:))
 	}
 	
 	public func shutdown() throws {
-		guard state == .connected, wsclient.isConnected else {
+		guard state == .connected, let wsclient = wsclient, wsclient.isConnected else {
 			logger.info("asked to shutdown when not running")
 			throw ComputeError.notConnected
 		}
@@ -101,11 +96,44 @@ public class ComputeWorker {
 	
 	public func send(data: Data) throws {
 		guard data.count > 0 else { throw ComputeError.sendingEmptyMessage }
-		guard state == .connected, wsclient.isConnected else { throw ComputeError.notConnected }
+		guard state == .connected, let wsclient = wsclient, wsclient.isConnected else { throw ComputeError.notConnected }
 		wsclient.sendMessage(data: data, opcode: .text)
 	}
 
 	// MARK: - private methods
+	
+	private func handleRedirect(response: HTTPURLResponse?, request: URLRequest?, error: Error?) {
+		guard error == nil else {
+			self.logger.error("failed to get ws port: \(error?.localizedDescription ?? "no new request")")
+			self.delegate?.handleCompute(error: .failedToConnect)
+			return
+		}
+		guard let rsp = response, rsp.statusCode == 302, var urlstr = rsp.allHeaderFields["Location"] as? String else {
+			self.logger.error("failed to redirect location")
+			self.delegate?.handleCompute(error: .failedToConnect)
+			return
+		}
+		if !urlstr.starts(with: "ws") {
+			urlstr = "ws://\(urlstr)"
+		}
+		guard let url = URL(string: urlstr) else {
+			self.logger.error("failed to turn \(urlstr) into a url")
+			self.delegate?.handleCompute(error: .failedToConnect)
+			return
+		}
+		self.wsclient = WebSocketClient(url.absoluteString, eventLoopGroup: eventGroup)! // code shows no path to return nil
+		self.state = .connecting
+		// FIXME: this delay should be on compute
+		DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(200)) {
+			self.logger.info("opening ws connection")
+			do {
+				try self.wsclient?.connect()
+			} catch {
+				self.logger.info("failed to connect websocket: \(error.localizedDescription)")
+				self.delegate?.handleCompute(error: .failedToConnect)
+			}
+		}
+	}
 	
 	private func launchCompute() {
 		guard let k8sServer = k8sServer else { fatalError("missing k8s server") }
@@ -126,19 +154,21 @@ public class ComputeWorker {
 
 extension ComputeWorker: WebSocketClientDelegate {
 	public func onText(text: String) {
-		logger.warning("compute worker received unexpected text from server");
+		logger.info("rcvd t from compute")
+		delegate?.handleCompute(data: text.data(using: .utf8)!)
 	}
 	
 	public func onBinary(data: Data) {
+		logger.info("rcvd b from compute")
 		delegate?.handleCompute(data: data)
 	}
 	
 	public func onPing(data: Data) {
-		wsclient.pong(data: data)
+		wsclient?.pong(data: data)
 	}
 	
 	public func onPong(data: Data) {
-		wsclient.ping(data: data)
+		wsclient?.ping(data: data)
 	}
 	
 	public func onClose(channel: Channel, data: Data) {
