@@ -80,6 +80,16 @@ final class CodingTests: BaseTest, SessionConnectionDelegate {
     XCTAssertEqual(sessionResponse.previewId, 1)
     XCTAssertEqual(sessionResponse.results, "some content")
   }
+  func testDecodePreviewUpdate() throws {
+    let settings = Self.app!.settings!
+    let rawJson = """
+    {"previewId":1,"complete":true,"updateIdentifier":"","chunkId":-1,"content":""}
+    """
+    let data = rawJson.data(using: .utf8)!
+    let result = try settings.decode(SessionResponse.PreviewUpdateData.self, from: data)
+    XCTAssertNotNil(result)
+    XCTAssertEqual(result.previewId, 1)
+  }
 
 }
 
