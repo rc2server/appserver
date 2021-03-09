@@ -10,7 +10,7 @@ import Logging
 import Socket
 import NIO
 import NIOHTTP1
-import KituraWebSocketClient
+import WebSocketKit
 
 // FIXME: This viersion using KituraWebSocketClient is having serious issues. Saving this version so can re-implement but come back if necessary
 
@@ -49,7 +49,8 @@ public class ComputeWorker {
 	let sessionId: Int
 	let k8sServer: K8sServer?
 	let eventGroup: EventLoopGroup
-	var wsclient: WebSocketClient?
+	var computeWs: WebSocket?
+	var closePromise: EventLoopPromise<Void>
 	
 	private weak var delegate: ComputeWorkerDelegate?
 	private(set) var state: ComputeState = .uninitialized {
@@ -66,6 +67,7 @@ public class ComputeWorker {
 		self.delegate = delegate
 		self.k8sServer = k8sServer
 		self.eventGroup = eventGroup
+		self.closePromise = eventGroup.next().makePromise(of: Void.self)
 	}
 
 	// MARK: - functions
@@ -87,17 +89,18 @@ public class ComputeWorker {
 	}
 	
 	public func shutdown() throws {
-		guard state == .connected, let wsclient = wsclient, wsclient.isConnected else {
+		guard state == .connected, let wsclient = computeWs, !wsclient.isClosed else {
 			logger.info("asked to shutdown when not running")
 			throw ComputeError.notConnected
 		}
-		wsclient.close()
+		try wsclient.close().wait()
 	}
 	
 	public func send(data: Data) throws {
 		guard data.count > 0 else { throw ComputeError.sendingEmptyMessage }
-		guard state == .connected, let wsclient = wsclient, wsclient.isConnected else { throw ComputeError.notConnected }
-		wsclient.sendMessage(data: data, opcode: .text)
+		guard state == .connected, let wsclient = computeWs, !wsclient.isClosed else { throw ComputeError.notConnected }
+		// FIXME: duplicate encoding
+		wsclient.send(String(data: data, encoding: .utf8)!)
 	}
 
 	// MARK: - private methods
@@ -121,16 +124,37 @@ public class ComputeWorker {
 			self.delegate?.handleCompute(error: .failedToConnect)
 			return
 		}
-		self.wsclient = WebSocketClient(url.absoluteString, eventLoopGroup: eventGroup)! // code shows no path to return nil
 		self.state = .connecting
+		let log = logger
 		// FIXME: this delay should be on compute
 		DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(200)) {
-			self.logger.info("opening ws connection")
+			log.info("opening ws connection")
+			let connectFuture = WebSocket.connect(to: url, on: self.eventGroup) { ws in
+				log.info("think connected to compute")
+				self.computeWs = ws
+				ws.onText { [weak self] ws, str in
+					guard let me = self, let del = me.delegate else { return }
+					del.handleCompute(data: str.data(using: .utf8)!)
+				}
+				ws.onBinary { [weak self] ws, bb in
+					guard let me = self, let del = me.delegate else { return }
+					del.handleCompute(data: Data(buffer: bb))
+				}
+				ws.onClose.cascade(to: self.closePromise)
+			}
+			connectFuture.whenFailureBlocking(onto: .global()) { [weak self] error in
+				log.error("failed to connect ws to compute: \(error.localizedDescription)")
+				self?.delegate?.handleCompute(error: .failedToConnect)
+			}
+			connectFuture.whenSuccess {
+				log.info("ws connected")
+				self.state = .connected
+			}
 			do {
-				try self.wsclient?.connect()
+				try self.closePromise.futureResult.wait()
+				log.info("connection closed")
 			} catch {
-				self.logger.info("failed to connect websocket: \(error.localizedDescription)")
-				self.delegate?.handleCompute(error: .failedToConnect)
+				log.error("error from websocket: \(error)")
 			}
 		}
 	}
@@ -150,35 +174,4 @@ public class ComputeWorker {
 	private func updateStatus() {
 		fatalError("not implemented")
 	}
-}
-
-extension ComputeWorker: WebSocketClientDelegate {
-	public func onText(text: String) {
-		logger.info("rcvd t from compute")
-		delegate?.handleCompute(data: text.data(using: .utf8)!)
-	}
-	
-	public func onBinary(data: Data) {
-		logger.info("rcvd b from compute")
-		delegate?.handleCompute(data: data)
-	}
-	
-	public func onPing(data: Data) {
-		wsclient?.pong(data: data)
-	}
-	
-	public func onPong(data: Data) {
-		wsclient?.ping(data: data)
-	}
-	
-	public func onClose(channel: Channel, data: Data) {
-		delegate?.handleConnectionClosed()
-	}
-	
-	public func onError(error: Error?, status: HTTPResponseStatus?) {
-		logger.warning("computer socket error: \(error?.localizedDescription ?? "?") for status: \(status?.reasonPhrase ?? "-")")
-		delegate?.handleCompute(error: .network)
-	}
-	
-	
 }

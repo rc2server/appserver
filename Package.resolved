@@ -128,6 +128,15 @@
         }
       },
       {
+        "package": "KituraWebSocket",
+        "repositoryURL": "https://github.com/Kitura/Kitura-WebSocket-NIO.git",
+        "state": {
+          "branch": null,
+          "revision": "9864e3fb162c8b0f7e2a4fd5ce7389d82b9bd3c0",
+          "version": "2.1.200"
+        }
+      },
+      {
         "package": "KituraContracts",
         "repositoryURL": "https://github.com/Kitura/KituraContracts.git",
         "state": {
