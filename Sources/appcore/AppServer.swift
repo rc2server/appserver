@@ -29,8 +29,8 @@ public class App {
 	}
 	
 	let router = Router(mergeParameters: false, enableWelcomePage: false)
-	let heLogger = HeliumLogger()
-	let logger = Logger(label: "rc2.app")
+	let heLogger: HeliumLogger
+	let logger: Logger
 	internal private(set) var settings: AppSettings!
 	private var dataDirURL: URL!
 	internal private(set) var dao: Rc2DAO!
@@ -40,6 +40,7 @@ public class App {
 	private var clArgs: [String]
 	
 	public init(_ args: [String]? = nil) throws {
+		heLogger = HeliumLogger()
 		heLogger.dateFormat = "HH:mm:ss.SSS"
 		heLogger.format = "[(%date)] [(%type)] [(%file):(%line)] (%msg)"
 		LoggingSystem.bootstrap(heLogger.makeLogHandler)
@@ -48,6 +49,7 @@ public class App {
 		} else {
 			clArgs = ProcessInfo.processInfo.arguments
 		}
+		logger = Logger(label: "rc2.app")
 	}
 
 	private func connectToDB() -> Bool {
