@@ -9,14 +9,17 @@ import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
+import Logging
 
 public class CaptureRedirect: NSObject {
 	public typealias RedirectCallback = (HTTPURLResponse?, URLRequest?, Error?) -> Void
 	private var session: URLSession?
 	private var callback: RedirectCallback?
 	private var madeCallback = false
+	private let logger: Logger
 	
-	public override init() {
+	public init(log: Logger) {
+		self.logger = log
 		super.init()
 		session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
 	}
@@ -26,6 +29,7 @@ public class CaptureRedirect: NSObject {
 		self.callback = callback
 		let task = session?.dataTask(with: request, completionHandler: { [weak self] (_, rsp, err) in
 			guard let me = self else { return }
+			me.logger.info("redirect finished")
 			if me.madeCallback {
 				return
 			}
@@ -44,6 +48,7 @@ public class CaptureRedirect: NSObject {
 extension CaptureRedirect: URLSessionTaskDelegate {
 	public func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void)
 	{
+		logger.info("rcv'd redirect")
 		callback?(response, request, nil)
 		callback = nil
 		madeCallback = true
