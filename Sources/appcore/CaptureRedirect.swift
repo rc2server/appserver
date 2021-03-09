@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 public class CaptureRedirect: NSObject {
 	public typealias RedirectCallback = (HTTPURLResponse?, URLRequest?, Error?) -> Void

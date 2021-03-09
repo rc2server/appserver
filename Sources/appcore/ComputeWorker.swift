@@ -11,6 +11,9 @@ import Socket
 import NIO
 import NIOHTTP1
 import WebSocketKit
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 // FIXME: This viersion using KituraWebSocketClient is having serious issues. Saving this version so can re-implement but come back if necessary
 
