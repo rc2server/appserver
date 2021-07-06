@@ -155,6 +155,15 @@
         }
       },
       {
+        "package": "OpenSSL",
+        "repositoryURL": "https://github.com/Kitura/OpenSSL.git",
+        "state": {
+          "branch": null,
+          "revision": "80b04f33b086fc90e28d9ae159d43705fb348e16",
+          "version": "2.2.200"
+        }
+      },
+      {
         "package": "pgswift",
         "repositoryURL": "https://github.com/mlilback/pgswift.git",
         "state": {
