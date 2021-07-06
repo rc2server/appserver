@@ -6,14 +6,14 @@
 //
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Logging
 import Socket
 import NIO
 import NIOHTTP1
 import WebSocketKit
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
 
 // FIXME: This viersion using KituraWebSocketClient is having serious issues. Saving this version so can re-implement but come back if necessary
 
@@ -84,9 +84,11 @@ public class ComputeWorker {
 			updateStatus()
 			return
 		}
+		print("Initialized Compute redirect")
+		
 		logger.info("getting compute port number")
-		let rc = CaptureRedirect()
-		let initReq = URLRequest(url: URL(string: "ws://\(config.computeHost):7714/")!)
+		let rc = CaptureRedirect(log: logger)
+		let initReq = URLRequest(url: URL(string: "http://\(config.computeHost):7714/")!)
 		state = .loading
 		rc.perform(request: initReq, callback: handleRedirect(response:request:error:))
 	}
@@ -103,12 +105,17 @@ public class ComputeWorker {
 		guard data.count > 0 else { throw ComputeError.sendingEmptyMessage }
 		guard state == .connected, let wsclient = computeWs, !wsclient.isClosed else { throw ComputeError.notConnected }
 		// FIXME: duplicate encoding
-		wsclient.send(String(data: data, encoding: .utf8)!)
+		let str = String(data: data, encoding: .utf8)!
+		if config.logComputeOutgoing {
+			logger.info("sending to compute: \(str)")
+		}
+		wsclient.send(str)
 	}
 
 	// MARK: - private methods
 	
 	private func handleRedirect(response: HTTPURLResponse?, request: URLRequest?, error: Error?) {
+		logger.info("handleRedirect called")
 		guard error == nil else {
 			self.logger.error("failed to get ws port: \(error?.localizedDescription ?? "no new request")")
 			self.delegate?.handleCompute(error: .failedToConnect)
@@ -122,17 +129,13 @@ public class ComputeWorker {
 		if !urlstr.starts(with: "ws") {
 			urlstr = "ws://\(urlstr)"
 		}
-		guard let url = URL(string: urlstr) else {
-			self.logger.error("failed to turn \(urlstr) into a url")
-			self.delegate?.handleCompute(error: .failedToConnect)
-			return
-		}
+		logger.info("using \(urlstr)")
 		self.state = .connecting
 		let log = logger
 		// FIXME: this delay should be on compute
-		DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(200)) {
+		DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(1800)) {
 			log.info("opening ws connection")
-			let connectFuture = WebSocket.connect(to: url, on: self.eventGroup) { ws in
+			let connectFuture = WebSocket.connect(to: urlstr, on: self.eventGroup) { ws in
 				log.info("think connected to compute")
 				self.computeWs = ws
 				ws.onText { [weak self] ws, str in
