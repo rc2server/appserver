@@ -136,7 +136,6 @@ public class ComputeWorker {
 		DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(1800)) {
 			log.info("opening ws connection")
 			let connectFuture = WebSocket.connect(to: urlstr, on: self.eventGroup) { ws in
-				log.info("think connected to compute")
 				self.computeWs = ws
 				ws.onText { [weak self] ws, str in
 					guard let me = self, let del = me.delegate else { return }
