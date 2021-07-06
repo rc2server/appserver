@@ -43,13 +43,14 @@ public class App {
 		heLogger = HeliumLogger()
 		heLogger.dateFormat = "HH:mm:ss.SSS"
 		heLogger.format = "[(%date)] [(%type)] [(%file):(%line)] (%msg)"
-		LoggingSystem.bootstrap(heLogger.makeLogHandler)
+//		LoggingSystem.bootstrap(heLogger.makeLogHandler)
 		if let rargs = args {
 			clArgs = rargs
 		} else {
 			clArgs = ProcessInfo.processInfo.arguments
 		}
 		logger = Logger(label: "rc2.app")
+		logger.info("logging initialized")
 	}
 
 	private func connectToDB() -> Bool {
