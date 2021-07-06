@@ -304,7 +304,6 @@ extension Session: ComputeWorkerDelegate {
 				logger.error("failed to send open connection message: \(error)")
 				let errmsg = SessionResponse.error(SessionResponse.ErrorData(transactionId: nil, error: SessionError.failedToConnectToCompute))
 				broadcastToAllClients(object: errmsg)
-				try? shutdown()
 			}
 		case .failedToConnect:
 			clientUpdate = .failed
