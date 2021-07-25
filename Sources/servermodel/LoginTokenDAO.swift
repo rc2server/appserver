@@ -66,8 +66,10 @@ public final class LoginTokenDAO {
 		do {
 			let params: [QueryParameter] = [ try QueryParameter(type: .int8, value: token.id, connection: pgdb), try QueryParameter(type: .int8, value: token.userId, connection: pgdb) ]
 			let result = try? pgdb.execute(query: "select * from logintoken where id = $1 and userId = $2 and valid = true", parameters: params)
-			guard let res = result, res.wasSuccessful, res.rowCount == 1
-				else { return false }
+			guard let res = result, res.wasSuccessful, res.rowCount == 1 else { 
+				logger.info("failed to validate token for user \(token.userId)")
+				return false 
+			}
 			return true
 		} catch {
 			logger.warning("validateLoginToken failed: \(error)")
