@@ -11,7 +11,7 @@ import Rc2Model
 import Logging
 
 /// really just for testing purposes. Gets calls write calls to remote socket
-protocol SessionConnectionDelegate: class {
+protocol SessionConnectionDelegate: AnyObject {
 	func connectionDataSent(data: Data) 
 }
 

@@ -18,7 +18,7 @@ import WebSocketKit
 // FIXME: This viersion using KituraWebSocketClient is having serious issues. Saving this version so can re-implement but come back if necessary
 
 /// for owner that needs to get callbacks
-public protocol ComputeWorkerDelegate: class {
+public protocol ComputeWorkerDelegate: AnyObject {
 	/// the data will be invalid after this call. (it is pointing to a raw memory buffer that will be deallocated)
 	func handleCompute(data: Data)
 	func handleCompute(error: ComputeError)
