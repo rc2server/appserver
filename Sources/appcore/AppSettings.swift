@@ -172,6 +172,8 @@ public struct AppConfiguration: Decodable {
 	public let maximumWebSocketFileSizeKB: Int
 	/// the secret used with HMAC encoding in the authentication process. defaults to some gibberish that should not be used since it it avaiable in the source code.
 	public let jwtHmacSecret: String
+	/// If null, no auth cookie is used. If set, a cookie is used with that name to hold the client's authToken
+	public let authCookieName: String?
 	/// If true, CORS headers will be sent. defaults to true
 	public let enableCors: Bool
 	/// The origin for CORS requests. Defaults to "http://localhost:9080"
@@ -216,6 +218,7 @@ public struct AppConfiguration: Decodable {
 		case computeDbPort
 		case maximumWebSocketFileSizeKB
 		case jwtHmacSecret
+		case authCookieName
 		case enableCors
 		case corsOrigin
 		case computeReadBufferSize
@@ -251,6 +254,7 @@ public struct AppConfiguration: Decodable {
 		computeTimeout = try container.decodeIfPresent(Double.self, forKey: .computeTimeout) ?? 4.0
 		urlPrefixToIgnore = try container.decodeIfPresent(String.self, forKey: .urlPrefixToIgnore) ?? ""
 		jwtHmacSecret = try container.decodeIfPresent(String.self, forKey: .jwtHmacSecret) ?? "dsgsg89sdfgs32"
+		authCookieName = try container.decodeIfPresent(String.self, forKey: .authCookieName)
 		computeViaK8s = try container.decodeIfPresent(Bool.self, forKey: .computeViaK8s) ?? false
 		k8sStencilPath = try container.decodeIfPresent(String.self, forKey: .k8sStencilPath) ?? "/rc2/k8s-templates"
 		computeImage = try container.decodeIfPresent(String.self, forKey: .computeImage) ?? "docker.rc2.io/compute:latest"
