@@ -109,7 +109,6 @@ public class App {
 		files.addRoutes(router: router)
 		// websocket
 		sessionService = SessionService(settings: settings, logger: logger, minimumReapTime: TimeInterval(settings.config.sessionReapDelay))
-		WebSocket.register(service:sessionService,  onPath: "\(settings.config.urlPrefixToIgnore)/ws/:wsId")
 		WebSocket.register(service:sessionService,  onPath: "\(settings.config.urlPrefixToIgnore)/ws")
 	}
 	
