@@ -172,6 +172,10 @@ public struct AppConfiguration: Decodable {
 	public let maximumWebSocketFileSizeKB: Int
 	/// the secret used with HMAC encoding in the authentication process. defaults to some gibberish that should not be used since it it avaiable in the source code.
 	public let jwtHmacSecret: String
+	/// If true, CORS headers will be sent. defaults to true
+	public let enableCors: Bool
+	/// The origin for CORS requests. Defaults to "http://localhost:9080"
+	public let corsOrigin: String?
 	/// The initial log level. Defaults to info
 //	public let initialLogLevel: LogLevel
 	/// Path to store log files
@@ -212,6 +216,8 @@ public struct AppConfiguration: Decodable {
 		case computeDbPort
 		case maximumWebSocketFileSizeKB
 		case jwtHmacSecret
+		case enableCors
+		case corsOrigin
 		case computeReadBufferSize
 		case logFilePath
 //		case initialLogLevel
@@ -253,7 +259,17 @@ public struct AppConfiguration: Decodable {
 		logClientOutgoing = try container.decodeIfPresent(Bool.self, forKey: .logClientOutgoing) ?? false
 		logComputeIncoming = try container.decodeIfPresent(Bool.self, forKey: .logComputeIncoming) ?? false
 		logComputeOutgoing = try container.decodeIfPresent(Bool.self, forKey: .logComputeOutgoing) ?? false
-
+		let cors = try container.decodeIfPresent(Bool.self, forKey: .enableCors) ?? false
+		var corigin: String?
+		if cors {
+			if let origin = try container.decodeIfPresent(String.self, forKey: .corsOrigin) {
+				corigin = origin
+			} else {
+				logger.warning("config requests CORS be enabled but did not specify an origin. Skipping.")
+			}
+		}
+		enableCors = cors
+		corsOrigin = corigin
 		let cdb = try container.decodeIfPresent(String.self, forKey: .computeDbHost)
 		computeDbHost = cdb == nil ? dbHost : cdb!
 		computeStartupDelay = try container.decodeIfPresent(Int.self, forKey: .computeStartupDelay) ?? 2000

@@ -84,6 +84,10 @@ public class App {
 			sleep(UInt32(settings.config.dbConnectAttemptDelay))
 		}
 		guard dao != nil else { fatalError("failed to connect to db ") }
+		if settings.config.enableCors {
+			let cors = MyCorsHandler(logger: logger, origin: settings.config.corsOrigin)
+			router.all(middleware: cors)
+		}
 		// auth middleware
 		let mware = AuthMiddleware(settings: settings)
 		router.all(middleware: [mware])
@@ -158,5 +162,22 @@ public class App {
 			exit(EX_USAGE)
 		}
 		
+	}
+
+	class MyCorsHandler: RouterMiddleware {
+		private let logger: Logger
+		private let origin: String
+
+		init(logger: Logger, origin: String?) {
+			self.logger = logger
+			self.origin = origin ?? "http://localhost:9080"
+		}
+		func handle(request: RouterRequest, response: RouterResponse, next: @escaping () -> Void) throws {
+			response.headers["Access-Control-Allow-Origin"] = origin
+			response.headers["Access-Control-Allow-Methods"] = "OPTIONS, GET, POST, PUT, DELETE, HEAD"
+			response.headers["Access-Control-Request-Headers"] = "Content-Type, Accept, Origin, Authorization"
+			response.headers["Access-Control-Allow-Credentials"] = "true"
+			next()
+		}
 	}
 }
