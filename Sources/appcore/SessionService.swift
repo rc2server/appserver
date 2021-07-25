@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import Kitura
+import KituraNet
 import KituraWebSocket
 import Rc2Model
 import Logging
@@ -32,6 +34,7 @@ class SessionService: WebSocketService, Hashable {
 	private var connectionToSession: [String : Int] = [:] // key is connection.id, value is wspaceId
 	private var reapingTimer: RepeatingTimer?
 	private var k8sServer: K8sServer?
+	private let wsIdPathRegex: NSRegularExpression
 	
 	/// initializes SessionService
 	///
@@ -42,6 +45,7 @@ class SessionService: WebSocketService, Hashable {
 	{
 		self.settings = settings
 		self.logger = logger
+		self.wsIdPathRegex = try! NSRegularExpression(pattern: #"(?:/|\?)(\d+)$"#)
 		if settings.config.computeViaK8s {
 			do {
 				self.k8sServer = try K8sServer(config: settings.config)
@@ -62,12 +66,12 @@ class SessionService: WebSocketService, Hashable {
 				if let lastTime = session.lastClientDisconnect,
 					lastTime.timeIntervalSinceReferenceDate < reapTime
 				{
-					do {
+//					do {
 						me.logger.info("reaping session \(session.sessionId ?? -1) for wspace \(wspaceId)")
 //						try session.shutdown()
-					} catch {
-						me.logger.info("error reaping session \(wspaceId): \(error)")
-					}
+//					} catch {
+//						me.logger.info("error reaping session \(wspaceId): \(error)")
+//					}
 					me.activeSessions.removeValue(forKey: wspaceId)
 				}
 			}
@@ -78,22 +82,82 @@ class SessionService: WebSocketService, Hashable {
 		}
 	}
 	
+	/// returns the workspaceId if found at the end of url
+	private func getWorkspaceId(request: ServerRequest) -> Int? {
+		if let q = request.urlURL.query, let ival = Int(q) {
+			logger.debug("found wspaceId via query string")
+			return ival
+		}
+		let path = request.urlURL.path
+		let pathRange = NSRange(path.startIndex..<path.endIndex, in: path)
+		let matches = wsIdPathRegex.matches(in: path, options: .anchored, range: pathRange)
+		if 	let match = matches.first {
+			logger.debug("found match")
+			let mrng = match.range(at:0)
+			if let subrng = Range(mrng, in: path),
+				let wsId = Int(path[subrng]) 
+			{
+				logger.debug("found wsId in query string: \(wsId)")
+				return wsId
+			}
+		}
+		// didn't find in url. look for custom header
+		if let wsStr = request.headers[HTTPHeaders.wspaceId]?.first, let wsId = Int(wsStr) {
+			return wsId
+		}
+		return nil
+	}
+
+	private func checkToken(request: ServerRequest, cookies: [String: String]) -> (User, Workspace)? {
+		// make sure they have a valid auth token, extract the user from it, and make sure they own the workspace
+		guard let token = settings.loginToken(from: request.headers[HTTPHeaders.authorization]?.first, cookies: cookies) else {
+			logger.info("checkToken: failed to find token")
+			return nil
+		}
+		guard let wspaceId = getWorkspaceId(request: request) else {
+			logger.info("checkToken: failed to get wspaceeId")
+			return nil
+		}
+		guard let wspace = try? settings.dao.getWorkspace(id: wspaceId) else {
+			logger.info("checkToken: failed to get wspaceId")
+			return nil
+		}
+		guard let fuser = try? settings.dao.getUser(id: token.userId) else {
+			logger.info("checkToken: failed to get user from token")
+			return nil
+		}
+		guard wspace.userId == fuser.id else {
+			logger.info("checkToken: user is not the owner of workspace")
+			return nil
+		}
+		return (fuser, wspace)
+	}
+
+	private func createCookieDict(request: ServerRequest) -> [String: String] {
+		var cookieDict = [String: String]()
+		if let cArray = request.headers["Cookie"] {
+			let all = cArray.flatMap { $0.split(separator: ";") }.map { $0.trimmingCharacters(in: .whitespaces) }
+			all.forEach { str in 
+				let parts = str.split(separator: "=")
+				if parts.count == 2 {
+					cookieDict[String(parts[0])] = String(parts[1])
+				}
+			}
+		}
+		return cookieDict
+	}
 	// MARK: - WebSocketService implementation
 	
 	func connected(connection: WebSocketConnection) {
-		logger.debug("sessionSerivce connected")
-		// make sure they have a valid auth token, extract thte user from it, and make sure they own the workspace
-
-		guard let wsStr = connection.request.headers[HTTPHeaders.wspaceId]?.first,
-				let wspaceId = Int(wsStr),
-			let token = settings.loginToken(from: connection.request.headers[HTTPHeaders.authorization]?.first),
-			let wspace = try? settings.dao.getWorkspace(id: wspaceId),
-			let fuser = try? settings.dao.getUser(id: token.userId),
-			wspace.userId == fuser.id
-		else {
+		logger.info("sessionSerivce connected: \(connection.request.urlURL.query ?? "")")
+		// create dict of cookie key/value pairs
+		let cookieDict = createCookieDict(request: connection.request)
+		// make sure they have a valid auth token, extract the user from it, and make sure they own the workspace
+		guard let (fuser, wspace) = checkToken(request: connection.request, cookies: cookieDict) else {
 			logger.warning("websocket request without an auth token")
-			// close ourselves
-			DispatchQueue.global().async {
+			// close ourselves after this has returned
+			// FIXME: this crashes
+			DispatchQueue.main.async {
 				connection.close()
 			}
 			return
@@ -102,7 +166,7 @@ class SessionService: WebSocketService, Hashable {
 		//get the session
 		lock.wait()
 		defer { lock.signal() }
-		var session = activeSessions[wspaceId]
+		var session = activeSessions[wspace.id]
 		if session == nil {
 			if activeSessions.count == 0 {
 				reapingTimer?.resume()
@@ -111,20 +175,22 @@ class SessionService: WebSocketService, Hashable {
 			session = Session(workspace: wspace, settings: settings)
 			do {
 				try session!.start(k8sServer: self.k8sServer)
-				activeSessions[wspaceId] = session
+				activeSessions[wspace.id] = session
+				logger.info("started Session")
 			} catch {
-				logger.error("failed to start session \(wspaceId): \(error)")
+				logger.error("failed to start session \(wspace.id): \(error)")
 				connection.close()
 				return
 			}
 		}
 		let ssocket = SessionConnection(connection: connection, user: fuser, settings: settings, logger: logger)
 		connections[connection.id] = ssocket
-		connectionToSession[connection.id] = wspaceId
+		connectionToSession[connection.id] = wspace.id
 		session?.added(connection: ssocket)
 	}
 	
 	func disconnected(connection: WebSocketConnection, reason: WebSocketCloseReasonCode) {
+		logger.info("websocket disconnected: \(reason)")
 		// remove that from our cache, and session's records
 		guard let sconnection = connections[connection.id],
 			let wspaceId = connectionToSession[connection.id],
@@ -166,6 +232,11 @@ class SessionService: WebSocketService, Hashable {
 	
 	func received(message: String, from: WebSocketConnection) {
 		logger.warning("recived unsupported string message. ignoring")
+		guard let data = message.data(using: .utf8) else {
+			logger.warning("failed to convert string to data")
+			return
+		}
+		received(message: data, from: from)
 	}
 	
 	// MARK: - private methods

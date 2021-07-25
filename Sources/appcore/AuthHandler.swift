@@ -20,12 +20,15 @@ class AuthHandler: BaseHandler {
 	let tokenDao: LoginTokenDAO
 	let jwtSigner:  JWTSigner
 	let jwtVerifier: JWTVerifier
+	let rfcDateFormat = DateFormatter()
+
 
 	override init(settings: AppSettings) {
 		tokenDao = settings.dao.createTokenDAO()
 		let secretData = settings.config.jwtHmacSecret.data(using: .utf8, allowLossyConversion: true)!
 		jwtSigner = JWTSigner.hs512(key: secretData)
 		jwtVerifier = JWTVerifier.hs512(key: secretData)
+		rfcDateFormat.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
 		super.init(settings: settings)
 	}
 	
@@ -54,11 +57,18 @@ class AuthHandler: BaseHandler {
 			}
 			let token = try tokenDao.createToken(user: user)
 			var jwt = JWT(claims: token)
-			let signedJwt = try jwt.sign(using: jwtSigner)
+			let signedJwt = try jwt.sign(using: jwtSigner) 
+			if let ckname = settings.config.authCookieName {
+				let secure = (request.urlURL.scheme?.lowercased() ?? "") == "https"
+				let secureStr = secure ? "; Secure" : ""
+				let cookiestr = "\(ckname)=\(signedJwt); HttpOnly; SameSite=Strict\(secureStr)"
+				response.headers.append("Set-Cookie", value: cookiestr)
+			}
 			response.send(LoginResponse(token: signedJwt))
 			handler()
 		} catch {
 			do {
+				logger.warning("error processing login: \(error)")
 				try handle(error: .invalidLogin, response: response, statusCode: .unprocessableEntity)
 			} catch {
 				logger.error("error handling an error")
@@ -70,28 +80,15 @@ class AuthHandler: BaseHandler {
 	
 	func logoutHandler(request: RouterRequest, response: RouterResponse, next: @escaping () -> Void)
 	{
-		var user: User?
 		do {
 			response.status(.accepted)
-			guard let tokenStr = HTTPHeaders.extractAuthToken(request: request) else {
+			let authHeader = request.headers[HTTPHeaders.authorization]
+			let cdict = Dictionary(uniqueKeysWithValues: request.cookies.map {key,value in (value.name, value.value)})
+			guard let token = settings.loginToken(from: authHeader, cookies: cdict) else {
 				try response.end()
 				return
 			}
-			let verified = JWT<LoginToken>.verify(tokenStr, using: jwtVerifier)
-			guard verified else {
-				try response.end()
-				return
-			}
-			let newToken = try JWT<LoginToken>(jwtString: tokenStr, verifier: jwtVerifier)
-			user = try settings.dao.getUser(id: newToken.claims.userId)
-			guard  user != nil else {
-				try response.end()
-				return
-			}
-			logger.debug("logout for \(user?.login ?? "unknown")")
-			
-			try tokenDao.invalidate(token: newToken.claims)
-
+			try tokenDao.invalidate(token: token)
 			response.status(.accepted)
 			try response.end()
 		} catch {
@@ -115,33 +112,4 @@ public struct HTTPHeaders {
 	/// Authorization header
 	public static let authorization = "Authorization"
 	public static let wspaceId = "Rc2-WorkspaceId"
-
-	/// Extract an auth token from a RouterRequest
-	///
-	/// - Parameter request: the request who's headers to extract from
-	/// - Returns: the token, or nil if not found
-	public static func extractAuthToken(request: RouterRequest) -> String? {
-		return extractAuthToken(authHeader: request.headers[HTTPHeaders.authorization])
-	}
-
-	/// Extract an auth token from a ServerRequest
-	///
-	/// - Parameter request: the request who's headers to extract from
-	/// - Returns: the token, or nil if not found
-	public static func extractAuthToken(request: ServerRequest) -> String? {
-		return extractAuthToken(authHeader: request.headers[HTTPHeaders.authorization]?[0])
-	}
-
-	/// Parses authorization header and returns the token found there
-	///
-	/// - Parameter authHeader: The authentication header value. if nil, returns nil.
-	/// - Returns: the token, or nil if not found
-	public static func extractAuthToken(authHeader: String?) -> String? {
-		guard let rawHeader = authHeader else { return nil }
-		//extract the bearer token
-		let prefix = "Bearer "
-		let tokenIndex = rawHeader.index(rawHeader.startIndex, offsetBy: prefix.count)
-		let token = String(rawHeader[tokenIndex...])
-		return token
-	}
 }

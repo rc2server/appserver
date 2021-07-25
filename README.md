@@ -50,3 +50,7 @@ need to run `export KITURA_NIO=1` before building
 
 For testing, run `export RC2_CONFIG_FILE_NAME=config-test.json`
 
+## TODO
+
+* Now that auth is available via cookies, need to set expiration date and update as the site is used.
+* SessionService.connected tries to close the socket and crashes if there is no wspaceId

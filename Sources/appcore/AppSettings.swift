@@ -6,14 +6,21 @@
 //
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import servermodel
 import Logging
 import KituraContracts
 import SwiftJWT
 import NIO
+import Kitura
+import KituraNet
+
+fileprivate let logger = Logger(label: "AppSettings")
 
 public class AppSettings: BodyEncoder, BodyDecoder {
-	let logger = Logger(label: "AppSettings")
+	// let logger = Logger(label: "AppSettings")
 	/// URL for a directory that contains resources used by the application.
 	public let dataDirURL: URL
 	/// The data access object for retrieving objects from the database.
@@ -95,21 +102,38 @@ public class AppSettings: BodyEncoder, BodyDecoder {
 		jwtVerifier = JWTVerifier.hs512(key: secretData)
 	}
 	
-	/// Parses an Authorization header (Bearer <token>) and extracts the LoginToken with userId
+	/// Parses an Authorization header (Bearer <token>) or plan <token> string and extracts the LoginToken with userId
 	///
-	/// - Parameter string: The value of an Authorization header
-	/// - Returns: the embedded LoginToken, or nil if there is an error
-	public func loginToken(from string: String?) -> LoginToken? {
-		guard let rawHeader = string else { return nil }
-		//extract the bearer token
+	/// - Parameter authHeader: The auth header value prefixed with Bearer (as in an Authorization header)
+	/// - Parameter cookies: optional cookies to examine for the auth token
+	/// - Returns: the LoginToken from the valid auth token, or nil
+	public func loginToken(from authHeader: String?, cookies: [String: String]? = nil) -> LoginToken? {
+		//check cookie
+		if let cname = config.authCookieName, 
+			let cookie = cookies?[cname],
+			let token = tokenFromString(tokenStr: cookie)
+		{
+			logger.info("found token via cookie")
+			return token
+		}
+		guard let headerStr = authHeader else { return nil }
 		let prefix = "Bearer "
-		let tokenIndex = rawHeader.index(rawHeader.startIndex, offsetBy: prefix.count)
-		let tokenStr = String(rawHeader[tokenIndex...])
+		if headerStr.hasPrefix(prefix) {
+			let tokenIndex = headerStr.index(headerStr.startIndex, offsetBy: prefix.count)
+			let tokenStr = String(headerStr[tokenIndex...])
+			if let token = tokenFromString(tokenStr: tokenStr) {
+				logger.info("found token via header")
+				return token
+			}
+		}
+		return nil
+	}
 
+	private func tokenFromString(tokenStr: String) -> LoginToken? {
+		logger.info("looking for auth token: \(tokenStr)")
 		let verified = JWT<LoginToken>.verify(tokenStr, using: jwtVerifier)
 		guard verified else { return nil }
 		guard let token = try? JWT<LoginToken>(jwtString: tokenStr, verifier: jwtVerifier),
-			dao.tokenDAO.validate(token: token.claims),
 			dao.tokenDAO.validate(token: token.claims)
 		else {
 			logger.debug("failed to validate extracted token")

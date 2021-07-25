@@ -32,16 +32,13 @@ class AuthMiddleware: RouterMiddleware {
 			return
 		}
 		do {
-			guard let tokenStr = HTTPHeaders.extractAuthToken(request: request) else {
+			let authHeader = request.headers[HTTPHeaders.authorization]
+			let cdict = Dictionary(uniqueKeysWithValues: request.cookies.map {key,value in (value.name, value.value)})
+			guard let token = settings.loginToken(from: authHeader, cookies: cdict) else {
 				try handleUnauthorized(response: response)
 				return
 			}
-			let verified = JWT<LoginToken>.verify(tokenStr, using: jwtVerifier)
-			guard verified else { try handleUnauthorized(response: response); return }
-			let newToken = try JWT<LoginToken>(jwtString: tokenStr, verifier: jwtVerifier)
-			guard tokenDao.validate(token: newToken.claims)
-				else { try handleUnauthorized(response: response); return }
-			let user = try settings.dao.getUser(id: newToken.claims.userId)
+			let user = try settings.dao.getUser(id: token.userId)
 			request.user = user
 			next()
 			return
