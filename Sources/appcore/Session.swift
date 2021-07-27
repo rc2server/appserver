@@ -25,6 +25,21 @@ class Session {
 	private(set) var sessionId: Int!
 	private var worker: ComputeWorker?
 	let coder: ComputeCoder
+	private var computeStatus: SessionResponse.ComputeStatus? {
+		didSet {
+			broadcastToAllClients(object: SessionResponse.computeStatus(computeStatus ?? .loading))
+		}
+	}
+	private var clientComputeStatus: SessionResponse.ComputeStatus {
+		guard let cstatus = computeStatus else { return .initializing }
+		switch cstatus {
+			case .running: return .running
+			case .initializing: return .initializing
+			case .loading: return .loading
+			case .reconnecting: return .reconnecting
+			case .failed: return .failed
+		}
+	}
 	private var isOpen = false
 	private var watchingVariables = false
 	private var closeHandled = false
@@ -84,8 +99,15 @@ class Session {
 	func added(connection: SessionConnection) {
 		lock.wait()
 		defer { lock.signal() }
+		let firstClient = connections.count == 0
 		connections.insert(connection)
 		lastClientDisconnect = nil
+		// deadlock if don't do until deferred above releases lock. if not starting session, send current status
+		if !firstClient {
+			DispatchQueue.main.async {
+				self.broadcast(object: SessionResponse.computeStatus(self.clientComputeStatus), toClient: connection.id)
+			}
+		}
 	}
 	
 	func removed(connection: SessionConnection) {
@@ -281,17 +303,15 @@ extension Session: ComputeWorkerDelegate {
 			logger.warning("why are ew getting a statusUpdate after closed?")
 			return
 		} //theoretically server should never send an error after closed, but just in case
-		// TODO: do we need to track the current status? ';
-		var clientUpdate: SessionResponse.ComputeStatus?
 		switch statusUpdate {
 		case .uninitialized:
 			fatalError("state should be impossible")
 		case .initialHostSearch:
-			clientUpdate = .initializing
+			computeStatus = .initializing
 		case .loading:
-			clientUpdate = .loading
+			computeStatus = .loading
 		case .connecting:
-			clientUpdate = .initializing
+			computeStatus = .initializing
 		case .connected:
 			// send open connection message
 			do {
@@ -307,11 +327,11 @@ extension Session: ComputeWorkerDelegate {
 				broadcastToAllClients(object: errmsg)
 			}
 		case .failedToConnect:
-			clientUpdate = .failed
+			computeStatus = .failed
 		case .unusable:
 			logger.info("got unusable status update")
 		}
-		if let status = clientUpdate {
+		if let status = computeStatus {
 			// inform clients that status changed
 			logger.debug("sending compute status \(status)")
 			broadcastToAllClients(object: SessionResponse.computeStatus(status))
@@ -468,6 +488,7 @@ extension Session {
 			}
 			return
 		}
+		computeStatus = .running
 		broadcastToAllClients(object: SessionResponse.computeStatus(.running))
 	}
 
