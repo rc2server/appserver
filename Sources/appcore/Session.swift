@@ -15,6 +15,7 @@ import KituraWebSocket
 import NIO
 
 class Session {
+	let broadcastLockTimeout = 100 // milliseconds
 	var logger: Logger
 	let workspace: Workspace
 	let settings: AppSettings
@@ -147,7 +148,7 @@ class Session {
 	/// - Parameter object: the message to send
 	func broadcastToAllClients<T: Encodable>(object: T) {
 		do {
-			let wstatus = lock.wait(timeout: .now() + .milliseconds(50))
+			let wstatus = lock.wait(timeout: .now() + .milliseconds(broadcastLockTimeout))
 			if wstatus == .timedOut {
 				// most likely already locked, so we'll do nothing
 				logger.warning("skipping broadcast b/c lock busy")
