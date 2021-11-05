@@ -28,18 +28,25 @@ extension String {
 	}
 }
 
+internal protocol FileChangeMonitorDelegate: AnyObject {
+	func getFile(id: Int, wspaceId: Int) throws -> File
+}
+
 class FileChangeMonitor {
 	typealias Observer = (SessionResponse.FileChangedData) -> Void
 
 	private var dbConnection: DBConnection
 	private let queue: DispatchQueue
+	private weak var delegate: FileChangeMonitorDelegate?
+
 	private var observers = [(Int, Observer)]()
 	// has to be var or can't pass a callback that is a method on this object in the initializer
 	private var reader: DispatchSourceRead!
 
-	init(connection: DBConnection, queue: DispatchQueue = .global()) throws {
+	init(connection: DBConnection, delegate: FileChangeMonitorDelegate, queue: DispatchQueue = .global()) throws {
 		dbConnection = connection
 		self.queue = queue
+		self.delegate = delegate
 		reader = try connection.makeListenDispatchSource(toChannel: "rcfile", queue: queue, callback: handleNotification)
 		reader.activate()
 	}
@@ -55,6 +62,7 @@ class FileChangeMonitor {
 
 	// internal to allow unit testing
 	internal func handleNotification(notification: DBNotification?, error: Error?) {
+		guard let delegate = delegate else { fatalError("delegate not set") }
 		guard let msg = notification?.payload else {
 			logger.warning("FileChangeMonitor got error from database: \(error!)")
 			return
@@ -72,20 +80,12 @@ class FileChangeMonitor {
 		guard let changeType = SessionResponse.FileChangedData.FileChangeType(rawValue: msgType)
 			else { logger.warning("invalid change notifiction from db \(msg)"); return }
 		do {
-			var file: Rc2Model.File?
 			let results = try dbConnection.execute(query: "select * from rcfile where id = \(fileId)", parameters: [])
 			guard results.wasSuccessful else {
 				logger.warning("file watch selection failed: \(results.errorMessage)")
 				return
 			}
-			let row = 0
-			file = File(id: try Rc2DAO.value(columnName: "id", results: results, row: row),
-						wspaceId: try Rc2DAO.value(columnName: "wspaceId", results: results, row: row),
-						name: try Rc2DAO.value(columnName: "name", results: results, row: row),
-						version: try Rc2DAO.value(columnName: "version", results: results, row: row),
-						dateCreated: try Rc2DAO.value(columnName: "datecreated", results: results, row: row),
-						lastModified: try Rc2DAO.value(columnName: "lastmodified", results: results, row: row),
-						fileSize: try Rc2DAO.value(columnName: "filesize", results: results, row: row))
+			let file = try delegate.getFile(id: fileId, wspaceId: wspaceId)
 			let changeData = SessionResponse.FileChangedData(type: changeType, file: file, fileId: fileId)
 			observers.forEach { (anId, anAction) in
 				if wspaceId == anId {

@@ -12,7 +12,7 @@ import Logging
 
 internal let logger = Logger(label: "io.rc2.appserver.servermodel")
 
-open class Rc2DAO {
+open class Rc2DAO: FileChangeMonitorDelegate {
 	public enum DBError: Error {
 		case queryFailed
 		case connectionFailed
@@ -367,6 +367,28 @@ open class Rc2DAO {
 		precondition(results.rowCount == 1, "more than 1 file with same id should be impossible")
 		return try file(from: results, row: 0)
 	}
+
+	/// get a specific file in a workspace
+	///
+	/// - Parameters:
+	///   - id: id of the file
+	///   - wspaceId: the id of the workspace that contains the file
+	/// - Returns: file with id
+	/// - Throws: .duplicate if more than one row in database matched, Node errors if problem parsing results
+	public func getFile(id: Int, wspaceId: Int) throws -> File {
+		let params = [try QueryParameter(type: .int8, value: wspaceId, connection: pgdb),
+					  try QueryParameter(type: .int8, value: id, connection: pgdb)
+		]
+		let results = try pgdb.execute(query: "select f.* from rcfile f where f.wspaceId = $1 and f.id = $2", parameters: params)
+		guard results.wasSuccessful else {
+			logger.warning("query for file failed: \(results.errorMessage)")
+			throw DBError.queryFailed
+		}
+		guard results.rowCount > 0 else { throw ModelError.notFound }
+		// primary key makes it impossible to have more than one
+		precondition(results.rowCount == 1, "more than 1 file with same id should be impossible")
+		return try file(from: results, row: 0)
+	}
 	
 	/// gets files belonging to a workspace
 	///
@@ -575,7 +597,7 @@ open class Rc2DAO {
 	
 	public func addFileChangeObserver(wspaceId: Int, callback: @escaping (SessionResponse.FileChangedData) -> Void) throws {
 		if nil == fileMonitor {
-			fileMonitor = try FileChangeMonitor(connection: pgdb)
+			fileMonitor = try FileChangeMonitor(connection: pgdb, delegate: self)
 		}
 		fileMonitor?.add(wspaceId: wspaceId, observer: callback)
 	}
