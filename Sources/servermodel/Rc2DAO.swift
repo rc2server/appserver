@@ -629,6 +629,7 @@ open class Rc2DAO: FileChangeMonitorDelegate {
 						 name: try Rc2DAO.value(columnName: "name", results: results, row: row),
 						 userId: try Rc2DAO.value(columnName: "userid", results: results, row: row),
 						 projectId: try Rc2DAO.value(columnName: "projectid", results: results, row: row),
+						 rootFileId: try Rc2DAO.value(columnName: "rootFileId", results: results, row: row),
 						 uniqueId: try Rc2DAO.value(columnName: "uniqueid", results: results, row: row),
 						 lastAccess: try Rc2DAO.value(columnName: "lastaccess", results: results, row: row),
 						 dateCreated: try Rc2DAO.value(columnName: "datecreated", results: results, row: row))
@@ -643,7 +644,10 @@ open class Rc2DAO: FileChangeMonitorDelegate {
 					version: try Rc2DAO.value(columnName: "version", results: results, row: row),
 					dateCreated: try Rc2DAO.value(columnName: "datecreated", results: results, row: row),
 					lastModified: try Rc2DAO.value(columnName: "lastmodified", results: results, row: row),
-					fileSize: try Rc2DAO.value(columnName: "filesize", results: results, row: row))
+					fileSize: try Rc2DAO.value(columnName: "filesize", results: results, row: row),
+					path: try Rc2DAO.value(columnName: "path", results: results, row: row),
+					directory: try Rc2DAO.value(columnName: "directory", results: results, row: row),
+					children: [])
 	}
 
 	@inline(__always)

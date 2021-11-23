@@ -80,11 +80,6 @@ class FileChangeMonitor {
 		guard let changeType = SessionResponse.FileChangedData.FileChangeType(rawValue: msgType)
 			else { logger.warning("invalid change notifiction from db \(msg)"); return }
 		do {
-			let results = try dbConnection.execute(query: "select * from rcfile where id = \(fileId)", parameters: [])
-			guard results.wasSuccessful else {
-				logger.warning("file watch selection failed: \(results.errorMessage)")
-				return
-			}
 			let file = try delegate.getFile(id: fileId, wspaceId: wspaceId)
 			let changeData = SessionResponse.FileChangedData(type: changeType, file: file, fileId: fileId)
 			observers.forEach { (anId, anAction) in
